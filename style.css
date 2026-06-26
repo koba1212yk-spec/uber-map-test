@@ -1,0 +1,80 @@
+/* 全体初期化 */
+body, html { 
+    margin: 0; padding: 0; width: 100%; height: 100%; 
+    font-family: "MoveText", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #FFFFFF; color: #000000;
+}
+
+/* ① ログイン画面 */
+#loginPage { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; position: absolute; top: 0; left: 0; background: #F3F3F3; z-index: 100; }
+.form-container { background: #FFFFFF; padding: 35px 25px; border-radius: 0px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); width: 100%; max-width: 380px; box-sizing: border-box; }
+.uber-logo { font-size: 1.6em; font-weight: bold; letter-spacing: -0.03em; margin-bottom: 5px; color: #000000; }
+.form-container h1 { margin-top: 0; color: #000000; font-size: 1.3em; margin-bottom: 25px; font-weight: 500; }
+.input-group { margin-bottom: 20px; }
+.input-group label { display: block; font-size: 0.85em; color: #545454; margin-bottom: 6px; font-weight: bold; }
+input[type="text"], input[type="number"], .time-input { width: 100%; padding: 14px; border: 1px solid #E2E2E2; background: #F6F6F6; border-radius: 8px; box-sizing: border-box; font-size: 1em; color: #000000; transition: all 0.2s; }
+input[type="text"]:focus, input[type="number"]:focus, .time-input:focus { outline: none; border-color: #000000; background: #FFFFFF; }
+.radio-group { background: #F6F6F6; padding: 6px; border-radius: 8px; border: 1px solid #E2E2E2; }
+.radio-label { cursor: pointer; display: flex; align-items: center; padding: 10px; font-size: 0.95em; }
+.radio-label input { margin-right: 10px; accent-color: #06C167; }
+.manual-coords-area { display: none; background: #F6F6F6; padding: 14px; border-radius: 8px; border: 1px solid #E2E2E2; margin-top: -10px; margin-bottom: 20px; }
+.coord-row { display: flex; gap: 10px; }
+.coord-row div { flex: 1; }
+.coord-row label { font-size: 0.8em; color: #767676; }
+#actionBtn { padding: 16px; background: #06C167; color: #FFFFFF; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1em; transition: background 0.15s; }
+#actionBtn:hover { background: #05954F; }
+.status-msg { color: #545454; font-size: 0.9em; margin-top: 12px; text-align: center; min-height: 1.2em; }
+
+/* ② マップメイン画面 */
+#mapPage { display: none; width: 100%; height: 100%; position: relative; }
+#map { width: 100%; height: 100%; z-index: 1; }
+.map-header { position: absolute; top: 15px; left: 15px; z-index: 10; background: #FFFFFF; padding: 12px 20px; border-radius: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); font-size: 0.9em; font-weight: bold; color: #000000; display: flex; align-items: center; gap: 8px; }
+.status-dot { width: 8px; height: 8px; background: #06C167; border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 193, 103, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(6, 193, 103, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 193, 103, 0); } }
+.menu-btn { position: absolute; top: 15px; right: 15px; z-index: 10; background: #FFFFFF; border: none; padding: 12px 18px; font-size: 1.2em; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.12); cursor: pointer; transition: background 0.2s; }
+.menu-btn:hover { background: #F6F6F6; }
+
+/* ③ スライドメニュー（ドロワー） */
+.drawer-menu { position: fixed; top: 0; right: -340px; width: 320px; height: 100%; background: #FFFFFF; box-shadow: -4px 0 20px rgba(0,0,0,0.1); z-index: 2000; padding: 30px 20px; box-sizing: border-box; transition: right 0.3s cubic-bezier(0.1, 0.9, 0.2, 1); overflow-y: auto; }
+.drawer-menu.open { right: 0; } 
+.close-menu-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 1.8em; cursor: pointer; color: #545454; }
+.drawer-menu h2 { font-size: 1.1em; color: #000000; margin-top: 20px; margin-bottom: 15px; font-weight: bold; letter-spacing: 0.05em; }
+.profile-card { background: #F6F6F6; padding: 16px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #E2E2E2; }
+.profile-card p { margin: 10px 0; font-size: 0.95em; color: #000000; }
+.badge-text { font-weight: bold; color: #06C167; }
+.menu-divider { border: 0; height: 1px; background: #E2E2E2; margin: 25px 0; }
+.opinion-desc { font-size: 0.85em; color: #545454; margin-bottom: 10px; line-height: 1.4; }
+#opinionInput { width: 100%; height: 110px; padding: 12px; border: 1px solid #E2E2E2; background: #F6F6F6; border-radius: 8px; box-sizing: border-box; resize: none; font-size: 0.95em; margin-bottom: 12px; }
+.submit-opinion-btn { width: 100%; padding: 14px; background: #000000; color: #FFFFFF; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.95em; transition: background 0.15s; }
+
+/* 🎒 ④ カスタムピン ＆ 右上ステータスバッジ */
+.ubag-pin { background-image: url('bag-pin.png'); background-size: contain; background-repeat: no-repeat; background-position: center; background-color: transparent; position: relative; filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.3)); }
+.status-badge { position: absolute; top: 0px; right: -2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #FFFFFF; box-shadow: 0 1px 3px rgba(0,0,0,0.2); z-index: 2; }
+.aura-green { background-color: #06C167; }   
+.aura-yellow { background-color: #FFC107; }  
+.aura-red { background-color: #DC3545; }     
+
+.popup-btn { margin-top: 8px; padding: 8px 12px; background: #06C167; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85em; width: 100%; font-weight: bold; }
+.popup-btn:hover { background: #05954F; }
+.popup-btn-outline { margin-top: 6px; padding: 8px 12px; background: #FFF; color: #000; border: 1px solid #E2E2E2; border-radius: 6px; cursor: pointer; font-size: 0.85em; width: 100%; font-weight: bold; }
+.popup-btn-outline:hover { background: #F6F6F6; }
+
+/* ⑤ 中央プロフィールモーダル ＆ タグデザイン（シンプル化） */
+.checkbox-group { display: flex; flex-direction: column; gap: 8px; background: #F6F6F6; padding: 12px; border-radius: 8px; border: 1px solid #E2E2E2; }
+.checkbox-group label { display: flex; align-items: center; font-weight: normal; color: #000; font-size: 0.9em; cursor: pointer; }
+.checkbox-group input { margin-right: 10px; accent-color: #06C167; transform: scale(1.2); }
+
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; backdrop-filter: blur(2px); }
+.profile-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 340px; background: #FFFFFF; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 3001; padding: 25px; box-sizing: border-box; }
+.close-modal-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5em; color: #545454; cursor: pointer; }
+.modal-header h2 { margin: 0 0 5px 0; font-size: 1.3em; color: #000; }
+.modal-section { margin-bottom: 15px; }
+.modal-section h3 { font-size: 0.8em; color: #767676; margin: 0 0 5px 0; border-bottom: 1px solid #E2E2E2; padding-bottom: 3px; }
+.modal-section p { margin: 0; font-size: 0.95em; color: #000; font-weight: bold; }
+
+/* 🏷️ タグデザイン：絵文字の色を活かすシンプルな白背景統一 */
+.tags-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.tag { padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; color: #000; background: #FFFFFF; border: 1px solid #CCCCCC; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+.modal-action-btn { margin-top: 20px; width: 100%; padding: 12px; background: #06C167; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1em; cursor: pointer; }
+.modal-action-btn:hover { background: #05954F; }

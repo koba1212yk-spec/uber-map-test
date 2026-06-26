@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Uber配達員位置共有アプリ</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css" />
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#06C167">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="DriverMap">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    
+</head>
+<body>
+
+    <div id="loginPage">
+        <div class="form-container">
+            <div class="uber-logo">Uber Driver Map</div>
+            <h1>オンラインにする</h1>
+            
+            <div class="input-group">
+                <label>お名前</label>
+                <input type="text" id="nameInput" placeholder="例：こば（必須）">
+            </div>
+
+            <div class="input-group">
+                <label>今の一言（任意）</label>
+                <input type="text" id="msgInput" placeholder="例：マック地蔵中">
+            </div>
+
+            <div class="input-group">
+                <label>位置情報の登録方法</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="posMode" value="auto" checked> 📱 GPSで自動取得
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="posMode" value="manual"> ✍️ テスト座標＆時間入力
+                    </label>
+                </div>
+            </div>
+
+            <div id="manualCoordsArea" class="manual-coords-area">
+                <div class="coord-row">
+                    <div>
+                        <label>緯度</label>
+                        <input type="number" id="latInput" step="any" placeholder="35.6635">
+                    </div>
+                    <div>
+                        <label>経度</label>
+                        <input type="number" id="lngInput" step="any" placeholder="139.8731">
+                    </div>
+                </div>
+                <div class="coord-row" style="margin-top: 10px;">
+                    <div>
+                        <label>チェックイン時間（任意）</label>
+                        <input type="time" id="timeInput" class="time-input">
+                    </div>
+                </div>
+            </div>
+
+            <button id="actionBtn">出発する</button>
+            <div id="statusMessage" class="status-msg"></div>
+        </div>
+    </div>
+
+    <div id="mapPage">
+        <div class="map-header">
+            <div class="status-dot"></div>
+            位置共有中: <span id="userGreeting"></span>
+        </div>
+        
+        <button id="menuBtn" class="menu-btn">☰</button>
+        
+        <div id="map"></div>
+
+        <div id="drawerMenu" class="drawer-menu">
+            <button id="closeMenuBtn" class="close-menu-btn">×</button>
+            
+            <h2>マイプロフィール</h2>
+            <div class="profile-card">
+                <p><strong>ドライバー名:</strong> <span id="myProfileName">-</span></p>
+                <p><strong>現在の一言:</strong> <span id="myProfileMsg">-</span></p>
+                <p><strong>配達員ステータス:</strong> <span id="myProfileBadge" class="badge-text">-</span></p>
+                <p><strong>累計オンライン回数:</strong> <span id="myProfileCount">0</span> 回</p>
+            </div>
+            
+            <hr class="menu-divider">
+
+            <h2>⚙️ 基本プロフィール設定</h2>
+            <p class="opinion-desc">一度設定すれば、マップ上のアイコンから他の配達員が見られるようになります。</p>
+            
+            <div id="profileReadMode">
+                <div class="profile-card">
+                    <p><strong>📍 メインエリア:</strong> <span id="readArea">未設定</span></p>
+                    <p><strong>⏰ 稼働時間:</strong> <span id="readTime">未設定</span></p>
+                    <p style="margin-bottom: 5px;"><strong>🛵 車両＆サービス:</strong></p>
+                    <div id="readTags" class="tags-container">
+                        <span style="font-size:0.85em; color:#767676;">未設定</span>
+                    </div>
+                </div>
+                <button id="editProfileBtn" class="popup-btn-outline">✏️ プロフィールを編集する</button>
+            </div>
+
+            <div id="profileEditMode" style="display: none;">
+                <div class="input-group">
+                    <label>📍 メイン稼働エリア</label>
+                    <input type="text" id="profileArea" placeholder="例：葛西・西葛西周辺">
+                </div>
+                <div class="input-group">
+                    <label>⏰ メイン稼働時間</label>
+                    <input type="text" id="profileTime" placeholder="例：夜ピーク〜深夜">
+                </div>
+                
+                <div class="input-group">
+                    <label>🛵 車両タイプ（複数可）</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="vehicleTag" value="🚲 自転車"> 自転車</label>
+                        <label><input type="checkbox" name="vehicleTag" value="🛵 125cc以下"> 125cc以下</label>
+                        <label><input type="checkbox" name="vehicleTag" value="🏍️ 126cc以上"> 126cc以上</label>
+                        <label><input type="checkbox" name="vehicleTag" value="🚗 軽貨物"> 軽貨物</label>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>🎒 登録サービス（複数可）</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="serviceTag" value="⬛ Uber"> Uber</label>
+                        <label><input type="checkbox" name="serviceTag" value="🟥 出前館"> 出前館</label>
+                        <label><input type="checkbox" name="serviceTag" value="🟡 Wolt"> Wolt</label>
+                        <label><input type="checkbox" name="serviceTag" value="🔴 MENU"> MENU</label>
+                        <label><input type="checkbox" name="serviceTag" value="📦 その他"> その他</label>
+                    </div>
+                </div>
+                
+                <button id="saveProfileBtn" class="submit-opinion-btn" style="background:#06C167; margin-bottom: 8px;">💾 保存して確定</button>
+                <button id="cancelEditBtn" class="popup-btn-outline" style="color:#DC3545; border-color:#DC3545;">❌ キャンセル</button>
+                <div id="profileSaveMsg" class="status-msg"></div>
+            </div>
+
+            <hr class="menu-divider">
+            
+            <h2>フィードバックボックス</h2>
+            <textarea id="opinionInput" placeholder="ご意見を入力してください..."></textarea>
+            <button id="submitOpinionBtn" class="submit-opinion-btn">フィードバックを送信</button>
+        </div>
+    </div>
+
+    <div id="modalOverlay" class="modal-overlay"></div>
+    <div id="profileModal" class="profile-modal">
+        <button id="closeModalBtn" class="close-modal-btn">×</button>
+        <div class="modal-header">
+            <h2 id="modalName">-</h2>
+            <span id="modalBadge" class="badge-text"></span>
+        </div>
+        
+        <div class="modal-section" style="margin-top: 15px;">
+            <h3>📍 メインエリア</h3>
+            <p id="modalArea">未設定</p>
+        </div>
+        <div class="modal-section">
+            <h3>⏰ メイン稼働時間</h3>
+            <p id="modalTime">未設定</p>
+        </div>
+        <div class="modal-section">
+            <h3>🛵 車両＆サービス</h3>
+            <div id="modalTags" class="tags-container">
+                </div>
+        </div>
+        
+        <button id="modalLikeBtn" class="modal-action-btn">👍 応援を送る</button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
