@@ -59,7 +59,7 @@ input[type="text"]:focus, input[type="number"]:focus, .time-input:focus { outlin
 .popup-btn-outline { margin-top: 6px; padding: 8px 12px; background: #FFF; color: #000; border: 1px solid #E2E2E2; border-radius: 6px; cursor: pointer; font-size: 0.85em; width: 100%; font-weight: bold; }
 .popup-btn-outline:hover { background: #F6F6F6; }
 
-/* ⑤ 中央プロフィールモーダル ＆ タグデザイン（シンプル化） */
+/* ⑤ 中央プロフィールモーダル ＆ タグデザイン */
 .checkbox-group { display: flex; flex-direction: column; gap: 8px; background: #F6F6F6; padding: 12px; border-radius: 8px; border: 1px solid #E2E2E2; }
 .checkbox-group label { display: flex; align-items: center; font-weight: normal; color: #000; font-size: 0.9em; cursor: pointer; }
 .checkbox-group input { margin-right: 10px; accent-color: #06C167; transform: scale(1.2); }
@@ -72,9 +72,52 @@ input[type="text"]:focus, input[type="number"]:focus, .time-input:focus { outlin
 .modal-section h3 { font-size: 0.8em; color: #767676; margin: 0 0 5px 0; border-bottom: 1px solid #E2E2E2; padding-bottom: 3px; }
 .modal-section p { margin: 0; font-size: 0.95em; color: #000; font-weight: bold; }
 
-/* 🏷️ タグデザイン：絵文字の色を活かすシンプルな白背景統一 */
 .tags-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
 .tag { padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; color: #000; background: #FFFFFF; border: 1px solid #CCCCCC; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
 .modal-action-btn { margin-top: 20px; width: 100%; padding: 12px; background: #06C167; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1em; cursor: pointer; }
 .modal-action-btn:hover { background: #05954F; }
+
+/* 🆕 ⑥ 【新規】画面右下の快適操作コントロールエリア */
+.map-controls-container { position: absolute; bottom: 25px; right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 12px; align-items: flex-end; pointer-events: none; }
+.map-controls-container * { pointer-events: auto; }
+
+/* 自分／みんなのメモ切り替えトグル（セグメンテッドコントロール） */
+.segmented-control { background: #FFFFFF; border-radius: 30px; padding: 4px; display: flex; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid #E2E2E2; }
+.seg-btn { border: none; background: transparent; padding: 8px 14px; font-size: 0.85em; font-weight: bold; border-radius: 20px; cursor: pointer; color: #545454; transition: all 0.2s; }
+.seg-btn.active { background: #000000; color: #FFFFFF; }
+
+/* 丸型コントロールボタン（現在地など） */
+.control-circle-btn { width: 50px; height: 50px; background: #FFFFFF; border: none; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-size: 1.4em; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: background 0.2s; border: 1px solid #E2E2E2; }
+.control-circle-btn:hover { background: #F6F6F6; }
+
+/* カッコいい横長メインボタン（メモを残す） */
+.control-main-btn { padding: 14px 22px; background: #000000; color: #FFFFFF; border: none; border-radius: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-weight: bold; font-size: 0.95em; cursor: pointer; transition: transform 0.1s; border: 1px solid rgba(255,255,255,0.1); }
+.control-main-btn:active { transform: scale(0.95); }
+
+/* 🆕 ⑦ 【新規】画面中央の照準ターゲット（十字マーク） */
+.map-center-target { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; z-index: 5; pointer-events: none; }
+.target-cross-v { position: absolute; top: 0; left: 19px; width: 2px; height: 40px; background: #DC3545; }
+.target-cross-h { position: absolute; top: 19px; left: 0; width: 40px; height: 2px; background: #DC3545; }
+.target-center-dot { position: absolute; top: 16px; left: 16px; width: 8px; height: 8px; background: #DC3545; border-radius: 50%; border: 2px solid #FFFFFF; }
+
+/* 🆕 ⑧ 【新規】下部スライドメモ登録パネル */
+.memo-action-panel { display: none; position: absolute; bottom: 0; left: 0; width: 100%; background: #FFFFFF; z-index: 12; padding: 22px; box-sizing: border-box; box-shadow: 0 -5px 20px rgba(0,0,0,0.15); border-radius: 16px 16px 0 0; animation: slideUp 0.25s cubic-bezier(0.1, 0.9, 0.2, 1); }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.panel-msg { font-size: 0.95em; color: #333; text-align: center; margin-bottom: 18px; font-weight: bold; }
+.panel-buttons { display: flex; gap: 10px; }
+.btn-main-green { flex: 1; padding: 14px; background: #06C167; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1em; cursor: pointer; }
+.btn-outline-red { padding: 14px 20px; background: #FFFFFF; color: #DC3545; border: 1px solid #DC3545; border-radius: 8px; font-weight: bold; font-size: 1em; cursor: pointer; }
+.memo-action-panel h3 { margin: 0 0 15px 0; font-size: 1.1em; color: #000; }
+
+/* カテゴリ選択用チップ */
+.category-selector { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 5px; }
+.cat-chip { cursor: pointer; }
+.cat-chip input { display: none; }
+.cat-chip span { display: inline-block; padding: 6px 12px; background: #F6F6F6; border: 1px solid #E2E2E2; border-radius: 20px; font-size: 0.85em; font-weight: bold; color: #545454; }
+.cat-chip input:checked + span { background: #000000; color: #FFFFFF; border-color: #000000; }
+.memo-action-panel textarea { width: 100%; height: 80px; padding: 12px; border: 1px solid #E2E2E2; background: #F6F6F6; border-radius: 8px; box-sizing: border-box; resize: none; font-size: 0.95em; font-family: inherit; }
+.memo-action-panel textarea:focus { outline: none; border-color: #000000; background: #FFFFFF; }
+
+/* 🏷️ メモピン専用デザイン（シンプルな白丸枠に大きめ絵文字） */
+.memo-custom-pin { background: #FFFFFF; border: 2px solid #000000; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.25); font-size: 20px; }

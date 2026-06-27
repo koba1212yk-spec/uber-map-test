@@ -14,7 +14,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="DriverMap">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    
 </head>
 <body>
 
@@ -79,6 +78,52 @@
         
         <div id="map"></div>
 
+        <div id="mapCenterTarget" class="map-center-target">
+            <div class="target-cross-v"></div>
+            <div class="target-cross-h"></div>
+            <div class="target-center-dot"></div>
+        </div>
+
+        <div id="mapControlsContainer" class="map-controls-container">
+            <div class="segmented-control">
+                <button id="btnToggleAllMemos" class="seg-btn active">🌍 みんなのメモ</button>
+                <button id="btnToggleMyMemos" class="seg-btn">👤 自分のメモ</button>
+            </div>
+            <button id="geoBackBtn" class="control-circle-btn" title="現在地に移動">🎯</button>
+            <button id="addMemoModeBtn" class="control-main-btn">📝 メモを残す</button>
+        </div>
+
+        <div id="memoActionPanel" class="memo-action-panel">
+            <div id="memoPhaseLoc">
+                <p class="panel-msg">地図をスクロールして中央の照準を合わせてください</p>
+                <div class="panel-buttons">
+                    <button id="btnConfirmLoc" class="btn-main-green">📍 ここに決定する</button>
+                    <button id="btnCancelMemo" class="btn-outline-red">❌ キャンセル</button>
+                </div>
+            </div>
+            <div id="memoPhaseForm" style="display: none;">
+                <h3>📝 攻略メモを残す</h3>
+                <div class="input-group">
+                    <label>アイコンカテゴリ</label>
+                    <div class="category-selector">
+                        <label class="cat-chip"><input type="radio" name="memoCat" value="🏢 建物・入口" checked><span>🏢 建物</span></label>
+                        <label class="cat-chip"><input type="radio" name="memoCat" value="🅿️ 駐輪スポット"><span>🅿️ 駐輪</span></label>
+                        <label class="cat-chip"><input type="radio" name="memoCat" value="⚠️ 注意・取締り"><span>⚠️ 注意</span></label>
+                        <label class="cat-chip"><input type="radio" name="memoCat" value="🚻 休憩・トイレ"><span>🚻 トイレ</span></label>
+                        <label class="cat-chip"><input type="radio" name="memoCat" value="💡 その他・つぶやき"><span>💡 その他</span></label>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>メモ内容</label>
+                    <textarea id="memoTextInput" placeholder="例：タワマンの入り口は裏手のスロープを降りた地下にあります。"></textarea>
+                </div>
+                <div class="panel-buttons">
+                    <button id="btnSaveMemo" class="btn-main-green">💾 メモを保存</button>
+                    <button id="btnCancelForm" class="btn-outline-red">❌ キャンセル</button>
+                </div>
+            </div>
+        </div>
+
         <div id="drawerMenu" class="drawer-menu">
             <button id="closeMenuBtn" class="close-menu-btn">×</button>
             
@@ -88,6 +133,7 @@
                 <p><strong>現在の一言:</strong> <span id="myProfileMsg">-</span></p>
                 <p><strong>配達員ステータス:</strong> <span id="myProfileBadge" class="badge-text">-</span></p>
                 <p><strong>累計オンライン回数:</strong> <span id="myProfileCount">0</span> 回</p>
+                <p><strong>もらった応援の合計:</strong> 👍 <span id="myProfileLikes" style="font-weight:bold; color:#FF3366;">0</span> 回</p>
             </div>
             
             <hr class="menu-divider">
@@ -99,7 +145,7 @@
                 <div class="profile-card">
                     <p><strong>📍 メインエリア:</strong> <span id="readArea">未設定</span></p>
                     <p><strong>⏰ 稼働時間:</strong> <span id="readTime">未設定</span></p>
-                    <p style="margin-bottom: 5px;"><strong>🛵 車両＆サービス:</strong></p>
+                    <p style="margin-bottom: 5px;"><strong>🛵 車校＆サービス:</strong></p>
                     <div id="readTags" class="tags-container">
                         <span style="font-size:0.85em; color:#767676;">未設定</span>
                     </div>
@@ -159,7 +205,9 @@
             <span id="modalBadge" class="badge-text"></span>
         </div>
         
-        <div class="modal-section" style="margin-top: 15px;">
+        <p style="margin: 5px 0 15px 0; font-size: 0.9em; color:#545454;">獲得応援数: 👍 <span id="modalLikesCount" style="font-weight:bold; color:#FF3366;">0</span> 回</p>
+
+        <div class="modal-section">
             <h3>📍 メインエリア</h3>
             <p id="modalArea">未設定</p>
         </div>
@@ -169,8 +217,7 @@
         </div>
         <div class="modal-section">
             <h3>🛵 車両＆サービス</h3>
-            <div id="modalTags" class="tags-container">
-                </div>
+            <div id="modalTags" class="tags-container"></div>
         </div>
         
         <button id="modalLikeBtn" class="modal-action-btn">👍 応援を送る</button>
