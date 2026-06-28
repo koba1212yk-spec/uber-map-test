@@ -18,28 +18,18 @@
 </head>
 <body>
 
+    <!-- ① ログイン画面 -->
     <div id="loginPage">
         <div class="form-container">
             <div class="uber-logo">Uber Driver Map</div>
             <h1>オンラインにする</h1>
-            
-            <div class="input-group">
-                <label>お名前</label>
-                <input type="text" id="nameInput" placeholder="例：こば（必須）">
-            </div>
-            <div class="input-group">
-                <label>今の一言（任意）</label>
-                <input type="text" id="msgInput" placeholder="例：マック地蔵中">
-            </div>
+            <div class="input-group"><label>お名前</label><input type="text" id="nameInput" placeholder="例：こば（必須）"></div>
+            <div class="input-group"><label>今の一言（任意）</label><input type="text" id="msgInput" placeholder="例：マック地蔵中"></div>
             <div class="input-group">
                 <label>位置情報の登録方法</label>
                 <div class="radio-group">
-                    <label class="radio-label">
-                        <input type="radio" name="posMode" value="auto" checked> 📱 GPSで自動取得
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="posMode" value="manual"> ✍️ テスト座標＆時間入力
-                    </label>
+                    <label class="radio-label"><input type="radio" name="posMode" value="auto" checked> 📱 GPSで自動取得</label>
+                    <label class="radio-label"><input type="radio" name="posMode" value="manual"> ✍️ テスト座標＆時間入力</label>
                 </div>
             </div>
             <div id="manualCoordsArea" class="manual-coords-area">
@@ -56,22 +46,16 @@
         </div>
     </div>
 
+    <!-- ② マップメイン画面 -->
     <div id="mapPage">
-        <div class="map-header">
-            <div class="status-dot"></div>
-            位置共有中: <span id="userGreeting"></span>
-        </div>
-        
+        <div class="map-header"><div class="status-dot"></div>位置共有中: <span id="userGreeting"></span></div>
         <button id="menuBtn" class="menu-btn">☰</button>
         <div id="map"></div>
 
-        <div id="mapCenterTarget" class="map-center-target">
-            <div class="target-cross-v"></div>
-            <div class="target-cross-h"></div>
-            <div class="target-center-dot"></div>
-        </div>
+        <div id="mapCenterTarget" class="map-center-target"><div class="target-cross-v"></div><div class="target-cross-h"></div><div class="target-center-dot"></div></div>
 
         <div id="mapControlsContainer" class="map-controls-container">
+            <button id="goToBbsBtn" class="control-circle-btn" title="タイムライン">💬</button>
             <div class="filter-menu-container">
                 <button id="btnFilterMenu" class="control-circle-btn" title="表示フィルター">👁️</button>
                 <div id="filterMenu" class="filter-menu" style="display: none;">
@@ -108,25 +92,17 @@
                     <label>メモ内容</label>
                     <textarea id="memoTextInput" placeholder="例：タワマンの入り口は裏手のスロープを降りた地下にあります。"></textarea>
                 </div>
-                
                 <div class="input-group">
                     <label>📷 写真を添付（1枚・任意）</label>
                     <div id="imageUploadButtons" class="image-upload-buttons">
-                        <label class="image-upload-btn">
-                            <input type="file" id="memoCameraInput" accept="image/*" capture="environment" style="display:none;">
-                            <span id="memoCameraBtnText">📷 その場で撮影</span>
-                        </label>
-                        <label class="image-upload-btn">
-                            <input type="file" id="memoImageInput" accept="image/*" style="display:none;">
-                            <span id="memoImageBtnText">📁 フォルダから</span>
-                        </label>
+                        <label class="image-upload-btn"><input type="file" id="memoCameraInput" accept="image/*" capture="environment" style="display:none;"><span id="memoCameraBtnText">📷 その場で撮影</span></label>
+                        <label class="image-upload-btn"><input type="file" id="memoImageInput" accept="image/*" style="display:none;"><span id="memoImageBtnText">📁 フォルダから</span></label>
                     </div>
                     <div id="memoImagePreviewContainer" style="display:none; position:relative; margin-top:8px;">
                         <img id="memoImagePreview" src="" style="width:100%; max-height:150px; object-fit:cover; border-radius:8px;">
                         <button id="btnRemoveImage" class="remove-img-btn">×</button>
                     </div>
                 </div>
-
                 <div class="panel-buttons">
                     <button id="btnSaveMemo" class="btn-main-green">💾 メモを保存</button>
                     <button id="btnCancelForm" class="btn-outline-red">❌ キャンセル</button>
@@ -134,57 +110,25 @@
             </div>
         </div>
 
+        <!-- ドロワーメニュー -->
         <div id="drawerMenu" class="drawer-menu">
             <button id="closeMenuBtn" class="close-menu-btn">×</button>
             <h2>マイプロフィール</h2>
-            <div class="profile-card">
-                <p><strong>ドライバー名:</strong> <span id="myProfileName">-</span></p>
-                <p><strong>現在の一言:</strong> <span id="myProfileMsg">-</span></p>
-                <p><strong>配達員ステータス:</strong> <span id="myProfileBadge" class="badge-text">-</span></p>
-                <p><strong>累計オンライン回数:</strong> <span id="myProfileCount">0</span> 回</p>
-                <p><strong>もらった応援の合計:</strong> 👍 <span id="myProfileLikes" style="font-weight:bold; color:#FF3366;">0</span> 回</p>
-            </div>
-            
+            <div class="profile-card"><p><strong>ドライバー名:</strong> <span id="myProfileName">-</span></p><p><strong>現在の一言:</strong> <span id="myProfileMsg">-</span></p><p><strong>配達員ステータス:</strong> <span id="myProfileBadge" class="badge-text">-</span></p><p><strong>累計オンライン回数:</strong> <span id="myProfileCount">0</span> 回</p><p><strong>もらった応援の合計:</strong> 👍 <span id="myProfileLikes" style="font-weight:bold; color:#FF3366;">0</span> 回</p></div>
             <hr class="menu-divider">
             <h2>⚙️ 基本プロフィール設定</h2>
-            
             <div id="profileReadMode">
-                <div class="profile-card">
-                    <p><strong>📍 メインエリア:</strong> <span id="readArea">未設定</span></p>
-                    <p><strong>⏰ 稼働時間:</strong> <span id="readTime">未設定</span></p>
-                    <p style="margin-bottom: 5px;"><strong>🛵 車両＆サービス:</strong></p>
-                    <div id="readTags" class="tags-container"></div>
-                </div>
+                <div class="profile-card"><p><strong>📍 メインエリア:</strong> <span id="readArea">未設定</span></p><p><strong>⏰ 稼働時間:</strong> <span id="readTime">未設定</span></p><p style="margin-bottom: 5px;"><strong>🛵 車両＆サービス:</strong></p><div id="readTags" class="tags-container"></div></div>
                 <button id="editProfileBtn" class="popup-btn-outline">✏️ プロフィールを編集する</button>
             </div>
-
             <div id="profileEditMode" style="display: none;">
                 <div class="input-group"><label>📍 メイン稼働エリア</label><input type="text" id="profileArea"></div>
                 <div class="input-group"><label>⏰ メイン稼働時間</label><input type="text" id="profileTime"></div>
-                
-                <div class="input-group">
-                    <label>🛵 車両タイプ（複数可）</label>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" name="vehicleTag" value="🚲 自転車"> 自転車</label>
-                        <label><input type="checkbox" name="vehicleTag" value="🛵 125cc以下"> 125cc以下</label>
-                        <label><input type="checkbox" name="vehicleTag" value="🏍️ 126cc以上"> 126cc以上</label>
-                        <label><input type="checkbox" name="vehicleTag" value="🚗 軽貨物"> 軽貨物</label>
-                    </div>
-                </div>
-                <div class="input-group">
-                    <label>🎒 登録サービス（複数可）</label>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" name="serviceTag" value="⬛ Uber"> Uber</label>
-                        <label><input type="checkbox" name="serviceTag" value="🟥 出前館"> 出前館</label>
-                        <label><input type="checkbox" name="serviceTag" value="🟡 Wolt"> Wolt</label>
-                        <label><input type="checkbox" name="serviceTag" value="🔴 MENU"> MENU</label>
-                        <label><input type="checkbox" name="serviceTag" value="📦 その他"> その他</label>
-                    </div>
-                </div>
+                <div class="input-group"><label>🛵 車両タイプ</label><div class="checkbox-group"><label><input type="checkbox" name="vehicleTag" value="🚲 自転車"> 自転車</label><label><input type="checkbox" name="vehicleTag" value="🛵 125cc以下"> 125cc以下</label><label><input type="checkbox" name="vehicleTag" value="🏍️ 126cc以上"> 126cc以上</label><label><input type="checkbox" name="vehicleTag" value="🚗 軽貨物"> 軽貨物</label></div></div>
+                <div class="input-group"><label>🎒 登録サービス</label><div class="checkbox-group"><label><input type="checkbox" name="serviceTag" value="⬛ Uber"> Uber</label><label><input type="checkbox" name="serviceTag" value="🟥 出前館"> 出前館</label><label><input type="checkbox" name="serviceTag" value="🟡 Wolt"> Wolt</label><label><input type="checkbox" name="serviceTag" value="🔴 MENU"> MENU</label><label><input type="checkbox" name="serviceTag" value="📦 その他"> その他</label></div></div>
                 <button id="saveProfileBtn" class="submit-opinion-btn" style="background:#06C167; margin-bottom: 8px;">💾 保存して確定</button>
                 <button id="cancelEditBtn" class="popup-btn-outline" style="color:#DC3545; border-color:#DC3545;">❌ キャンセル</button>
             </div>
-
             <hr class="menu-divider">
             <h2>フィードバックボックス</h2>
             <textarea id="opinionInput" placeholder="ご意見を入力してください..."></textarea>
@@ -192,13 +136,61 @@
         </div>
     </div>
 
+    <!-- 🆕 ③ 掲示板（タイムライン）の表示画面（漆黒ダークモード） -->
+    <div id="bbsPage" style="display: none;">
+        <div class="bbs-header">
+            <button id="backToMapBtn" class="bbs-back-btn">←</button>
+            <div class="bbs-title">タイムライン</div>
+        </div>
+
+        <!-- タイムライン一覧エリア -->
+        <div id="bbsList" class="bbs-timeline"></div>
+
+        <!-- 20件ずつのデータ節約読み込みボタン -->
+        <button id="btnLoadMoreBbs" class="bbs-load-more-btn" style="display: none;">🔍 さらに読み込む</button>
+
+        <!-- 🆕 右下の投稿（＋）ボタン（Twitter風） -->
+        <button id="fabPostBtn" class="twitter-fab">+</button>
+    </div>
+
+    <!-- 🆕 ④ 掲示板の「投稿作成」専用の全画面ページ -->
+    <div id="bbsComposePage" style="display: none;" class="bbs-compose-overlay">
+        <div class="bbs-compose-header">
+            <button id="btnCancelBbs" class="bbs-compose-cancel">キャンセル</button>
+            <button id="btnPostBbs" class="twitter-post-btn">ポストする</button>
+        </div>
+        <div class="bbs-compose-body">
+            <div class="bbs-avatar-column">
+                <div class="twitter-avatar-mock"></div>
+            </div>
+            <div class="bbs-form-column">
+                <textarea id="bbsTextInput" placeholder="いまどうしてる？（葛西のリアルタイム情報を共有）"></textarea>
+                
+                <div id="bbsImagePreviewContainer" style="display:none; position:relative; margin-bottom:12px;">
+                    <img id="bbsImagePreview" src="" class="bbs-compose-image">
+                    <button id="btnRemoveBbsImage" class="remove-img-btn">×</button>
+                </div>
+
+                <div class="bbs-actions-bar">
+                    <div class="bbs-media-buttons">
+                        <label class="bbs-media-icon-btn" title="その場で撮影">
+                            <input type="file" id="bbsCameraInput" accept="image/*" capture="environment" style="display:none;">📷
+                        </label>
+                        <label class="bbs-media-icon-btn" title="フォルダから選択">
+                            <input type="file" id="bbsImageInput" accept="image/*" style="display:none;">📁
+                        </label>
+                        <span id="bbsCompressStatus" style="font-size:0.75em; color:#71767B; margin-left:5px;"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 各種モーダル -->
     <div id="modalOverlay" class="modal-overlay"></div>
     <div id="profileModal" class="profile-modal">
         <button id="closeModalBtn" class="close-modal-btn">×</button>
-        <div class="modal-header">
-            <h2 id="modalName">-</h2>
-            <span id="modalBadge" class="badge-text"></span>
-        </div>
+        <div class="modal-header"><h2 id="modalName">-</h2><span id="modalBadge" class="badge-text"></span></div>
         <p style="margin: 5px 0 15px 0; font-size: 0.9em; color:#545454;">獲得応援数: 👍 <span id="modalLikesCount" style="font-weight:bold; color:#FF3366;">0</span> 回</p>
         <div class="modal-section"><h3>📍 メインエリア</h3><p id="modalArea"></p></div>
         <div class="modal-section"><h3>⏰ メイン稼働時間</h3><p id="modalTime"></p></div>
