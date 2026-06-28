@@ -1,14 +1,7 @@
-/* 全体初期化 */
-body, html { 
-    margin: 0; padding: 0; width: 100%; height: 100%; 
-    font-family: "MoveText", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: #FFFFFF; color: #000000;
-}
-
-/* ① ログイン画面 */
+body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: "MoveText", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #FFFFFF; color: #000000; }
 #loginPage { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; position: absolute; top: 0; left: 0; background: #F3F3F3; z-index: 100; }
 .form-container { background: #FFFFFF; padding: 35px 25px; border-radius: 0px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); width: 100%; max-width: 380px; box-sizing: border-box; }
-.uber-logo { font-size: 1.6em; font-weight: bold; letter-spacing: -0.03em; margin-bottom: 5px; color: #000000; }
+.uber-logo { font-size: 1.6em; font-weight: bold; margin-bottom: 5px; color: #000000; }
 .form-container h1 { margin-top: 0; color: #000000; font-size: 1.3em; margin-bottom: 25px; font-weight: 500; }
 .input-group { margin-bottom: 20px; }
 .input-group label { display: block; font-size: 0.85em; color: #545454; margin-bottom: 6px; font-weight: bold; }
@@ -25,69 +18,57 @@ input[type="text"]:focus, input[type="number"]:focus, .time-input:focus { outlin
 #actionBtn:hover { background: #05954F; }
 .status-msg { color: #545454; font-size: 0.9em; margin-top: 12px; text-align: center; min-height: 1.2em; }
 
-/* ② マップメイン画面 */
 #mapPage { display: none; width: 100%; height: 100%; position: relative; }
 #map { width: 100%; height: 100%; z-index: 1; }
 .map-header { position: absolute; top: 15px; left: 15px; z-index: 10; background: #FFFFFF; padding: 12px 20px; border-radius: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); font-size: 0.9em; font-weight: bold; color: #000000; display: flex; align-items: center; gap: 8px; }
 .status-dot { width: 8px; height: 8px; background: #06C167; border-radius: 50%; animation: pulse 2s infinite; }
-@keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 193, 103, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(6, 193, 103, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 193, 103, 0); } }
+@keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 193, 103, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(6, 193, 103, 0); } 100% { transform: scale(0.95); } }
 .menu-btn { position: absolute; top: 15px; right: 15px; z-index: 10; background: #FFFFFF; border: none; padding: 12px 18px; font-size: 1.2em; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.12); cursor: pointer; transition: background 0.2s; }
-.menu-btn:hover { background: #F6F6F6; }
 
-/* ③ スライドメニュー（ドロワー） */
-.drawer-menu { position: fixed; top: 0; right: -340px; width: 320px; height: 100%; background: #FFFFFF; box-shadow: -4px 0 20px rgba(0,0,0,0.1); z-index: 2000; padding: 30px 20px; box-sizing: border-box; transition: right 0.3s cubic-bezier(0.1, 0.9, 0.2, 1); overflow-y: auto; }
+.drawer-menu { position: fixed; top: 0; right: -340px; width: 320px; height: 100%; background: #FFFFFF; box-shadow: -4px 0 20px rgba(0,0,0,0.1); z-index: 2000; padding: 30px 20px; box-sizing: border-box; transition: right 0.3s; overflow-y: auto; }
 .drawer-menu.open { right: 0; } 
 .close-menu-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 1.8em; cursor: pointer; color: #545454; }
-.drawer-menu h2 { font-size: 1.1em; color: #000000; margin-top: 20px; margin-bottom: 15px; font-weight: bold; letter-spacing: 0.05em; }
+.drawer-menu h2 { font-size: 1.1em; margin-top: 20px; margin-bottom: 15px; font-weight: bold; }
 .profile-card { background: #F6F6F6; padding: 16px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #E2E2E2; }
-.profile-card p { margin: 10px 0; font-size: 0.95em; color: #000000; }
+.profile-card p { margin: 10px 0; font-size: 0.95em; }
 .badge-text { font-weight: bold; color: #06C167; }
 .menu-divider { border: 0; height: 1px; background: #E2E2E2; margin: 25px 0; }
 .opinion-desc { font-size: 0.85em; color: #545454; margin-bottom: 10px; line-height: 1.4; }
 #opinionInput { width: 100%; height: 110px; padding: 12px; border: 1px solid #E2E2E2; background: #F6F6F6; border-radius: 8px; box-sizing: border-box; resize: none; font-size: 0.95em; margin-bottom: 12px; }
-.submit-opinion-btn { width: 100%; padding: 14px; background: #000000; color: #FFFFFF; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.95em; transition: background 0.15s; }
+.submit-opinion-btn { width: 100%; padding: 14px; background: #000000; color: #FFFFFF; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.95em; }
 
-/* 🎒 ④ カスタムピン ＆ 右上ステータスバッジ */
-.ubag-pin { background-image: url('bag-pin.png'); background-size: contain; background-repeat: no-repeat; background-position: center; background-color: transparent; position: relative; filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.3)); }
+.ubag-pin { background-image: url('bag-pin.png'); background-size: contain; background-repeat: no-repeat; background-position: center; position: relative; filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.3)); }
 .status-badge { position: absolute; top: 0px; right: -2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #FFFFFF; box-shadow: 0 1px 3px rgba(0,0,0,0.2); z-index: 2; }
 .aura-green { background-color: #06C167; }   
 .aura-yellow { background-color: #FFC107; }  
 .aura-red { background-color: #DC3545; }     
 
 .popup-btn { margin-top: 8px; padding: 8px 12px; background: #06C167; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85em; width: 100%; font-weight: bold; }
-.popup-btn:hover { background: #05954F; }
 .popup-btn-outline { margin-top: 6px; padding: 8px 12px; background: #FFF; color: #000; border: 1px solid #E2E2E2; border-radius: 6px; cursor: pointer; font-size: 0.85em; width: 100%; font-weight: bold; }
-.popup-btn-outline:hover { background: #F6F6F6; }
 
-/* ⑤ 中央プロフィールモーダル ＆ タグデザイン */
 .checkbox-group { display: flex; flex-direction: column; gap: 8px; background: #F6F6F6; padding: 12px; border-radius: 8px; border: 1px solid #E2E2E2; }
-.checkbox-group label { display: flex; align-items: center; font-weight: normal; color: #000; font-size: 0.9em; cursor: pointer; }
+.checkbox-group label { display: flex; align-items: center; font-size: 0.9em; cursor: pointer; }
 .checkbox-group input { margin-right: 10px; accent-color: #06C167; transform: scale(1.2); }
-
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; backdrop-filter: blur(2px); }
 .profile-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 340px; background: #FFFFFF; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 3001; padding: 25px; box-sizing: border-box; }
 .close-modal-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5em; color: #545454; cursor: pointer; }
 .tags-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
-.tag { padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; color: #000; background: #FFFFFF; border: 1px solid #CCCCCC; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-.modal-action-btn { margin-top: 20px; width: 100%; padding: 12px; background: #06C167; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1em; cursor: pointer; }
+.tag { padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; background: #FFFFFF; border: 1px solid #CCCCCC; }
+.modal-action-btn { margin-top: 20px; width: 100%; padding: 12px; background: #06C167; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
-/* ⑥ 右下操作コントロール ＆ フィルターメニュー */
 .map-controls-container { position: absolute; bottom: 25px; right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 12px; align-items: flex-end; pointer-events: none; }
 .map-controls-container * { pointer-events: auto; }
 .control-circle-btn { width: 50px; height: 50px; background: #FFFFFF; border: none; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-size: 1.4em; cursor: pointer; display: flex; justify-content: center; align-items: center; border: 1px solid #E2E2E2; }
-.control-main-btn { padding: 14px 22px; background: #000000; color: #FFFFFF; border: none; border-radius: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-weight: bold; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }
+.control-main-btn { padding: 14px 22px; background: #000000; color: #FFFFFF; border: none; border-radius: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-weight: bold; cursor: pointer; }
 .filter-menu-container { position: relative; }
 .filter-menu { position: absolute; bottom: 60px; right: 0; background: #FFF; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); border: 1px solid #E2E2E2; padding: 15px; display: flex; flex-direction: column; gap: 12px; width: 190px; }
-.filter-menu label { font-size: 0.95em; font-weight: bold; display: flex; align-items: center; gap: 10px; cursor: pointer; color: #333; }
-.filter-menu input { accent-color: #06C167; transform: scale(1.3); }
+.filter-menu label { font-size: 0.95em; font-weight: bold; display: flex; align-items: center; gap: 10px; cursor: pointer; }
 
-/* ⑦ 中央照準ターゲット */
 .map-center-target { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; z-index: 5; pointer-events: none; }
 .target-cross-v { position: absolute; top: 0; left: 19px; width: 2px; height: 40px; background: #DC3545; }
 .target-cross-h { position: absolute; top: 19px; left: 0; width: 40px; height: 2px; background: #DC3545; }
 .target-center-dot { position: absolute; top: 16px; left: 16px; width: 8px; height: 8px; background: #DC3545; border-radius: 50%; border: 2px solid #FFFFFF; }
 
-/* ⑧ 下部メモ登録パネル＆写真UI */
 .memo-action-panel { display: none; position: absolute; bottom: 0; left: 0; width: 100%; background: #FFFFFF; z-index: 12; padding: 22px; box-sizing: border-box; box-shadow: 0 -5px 20px rgba(0,0,0,0.15); border-radius: 16px 16px 0 0; animation: slideUp 0.2s; }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 .panel-msg { font-size: 0.95em; text-align: center; margin-bottom: 18px; font-weight: bold; }
@@ -98,10 +79,24 @@ input[type="text"]:focus, input[type="number"]:focus, .time-input:focus { outlin
 .cat-chip { cursor: pointer; }
 .cat-chip input { display: none; }
 .cat-chip span { display: inline-block; padding: 6px 12px; background: #F6F6F6; border: 1px solid #E2E2E2; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
-.cat-chip input:checked + span { background: #000000; color: #FFFFFF; border-color: #000000; }
-.memo-action-panel textarea { width: 100%; height: 80px; padding: 12px; border: 1px solid #E2E2E2; background: #F6F6F6; border-radius: 8px; box-sizing: border-box; resize: none; font-size: 0.95em; }
-.image-upload-btn { display: block; padding: 12px; background: #F6F6F6; border: 2px dashed #CCCCCC; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; color: #545454; }
+.cat-chip input:checked + span { background: #000000; color: #FFFFFF; }
+.memo-action-panel textarea { width: 100%; height: 80px; padding: 12px; border: 1px solid #E2E2E2; background: #F6F6F6; border-radius: 8px; box-sizing: border-box; resize: none; }
+
+.image-upload-buttons { display: flex; gap: 10px; margin-bottom: 8px; }
+.image-upload-btn { flex: 1; padding: 12px; background: #F6F6F6; border: 2px dashed #CCCCCC; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; color: #545454; font-size: 0.9em; transition: background 0.2s; }
 .remove-img-btn { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.7); color: #FFF; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 16px; cursor: pointer; }
 
-/* 🏷️ メモピン専用デザイン */
 .memo-custom-pin { background: #FFFFFF; border: 2px solid #000000; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.25); font-size: 20px; }
+
+/* 🆕 🔵 配達員専用クラスター（無理やりなズラしを解除して美しく！） */
+.driver-cluster { background-color: rgba(13, 110, 253, 0.4); border-radius: 50%; }
+.driver-cluster div { background-color: rgba(13, 110, 253, 0.9); width: 30px; height: 30px; margin-left: 5px; margin-top: 5px; text-align: center; border-radius: 50%; color: white; font-weight: bold; line-height: 30px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+
+/* 🆕 🟢 攻略メモ専用クラスター（件数に関わらず緑色で完全固定！） */
+.memo-cluster-fixed { background-color: rgba(6, 193, 103, 0.4); border-radius: 50%; }
+.memo-cluster-fixed div { background-color: rgba(6, 193, 103, 0.95); width: 30px; height: 30px; margin-left: 5px; margin-top: 5px; text-align: center; border-radius: 50%; color: white; font-weight: bold; line-height: 30px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+
+/* 🆕 🥜 ハイブリッド・クラスター（配達員とメモが両方ある時のピーナッツ型） */
+.hybrid-cluster { display: flex; align-items: center; justify-content: center; }
+.hybrid-driver { background-color: rgba(13, 110, 253, 0.9); width: 32px; height: 32px; border-radius: 50%; color: white; font-weight: bold; line-height: 28px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.4); z-index: 2; border: 2px solid white; box-sizing: border-box; }
+.hybrid-memo { background-color: rgba(6, 193, 103, 0.95); width: 32px; height: 32px; border-radius: 50%; color: white; font-weight: bold; line-height: 28px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.4); z-index: 1; border: 2px solid white; box-sizing: border-box; margin-left: -12px; /* ← ここで20%食い込ませる魔法！ */ }
