@@ -14,7 +14,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="DriverMap">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link class="apple-touch-icon" href="apple-touch-icon.png">
 </head>
 <body>
 
@@ -128,30 +128,45 @@
 
         <div id="drawerMenu" class="drawer-menu">
             <button id="closeMenuBtn" class="close-menu-btn">×</button>
+            
             <h2>マイプロフィール</h2>
             <div class="profile-card">
                 <p><strong>ドライバー名:</strong> <span id="myProfileName">-</span></p>
                 <p><strong>現在の一言:</strong> <span id="myProfileMsg">-</span></p>
                 <p><strong>配達員ステータス:</strong> <span id="myProfileBadge" class="badge-text">-</span></p>
                 <p><strong>累計オンライン回数:</strong> <span id="myProfileCount">0</span> 回</p>
-                <p><strong>もらった応援:</strong> 👍 <span id="myProfileLikes" style="font-weight:bold; color:#FF3366;">0</span> 回</p>
+                <p><strong>もらった応援の合計:</strong> 👍 <span id="myProfileLikes" style="font-weight:bold; color:#FF3366;">0</span> 回</p>
             </div>
+            
             <hr class="menu-divider">
+
             <h2>⚙️ 基本プロフィール設定</h2>
+            <p class="opinion-desc">一度設定すれば、マップ上のアイコンから他の配達員が見られるようになります。</p>
+            
             <div id="profileReadMode">
                 <div class="profile-card">
                     <p><strong>📍 メインエリア:</strong> <span id="readArea">未設定</span></p>
                     <p><strong>⏰ 稼働時間:</strong> <span id="readTime">未設定</span></p>
                     <p style="margin-bottom: 5px;"><strong>🛵 車両＆サービス:</strong></p>
-                    <div id="readTags" class="tags-container"></div>
+                    <div id="readTags" class="tags-container">
+                        <span style="font-size:0.85em; color:#767676;">未設定</span>
+                    </div>
                 </div>
-                <button id="editProfileBtn" class="popup-btn-outline">✏️ 編集する</button>
+                <button id="editProfileBtn" class="popup-btn-outline">✏️ プロフィールを編集する</button>
             </div>
+
             <div id="profileEditMode" style="display: none;">
-                <div class="input-group"><label>📍 エリア</label><input type="text" id="profileArea"></div>
-                <div class="input-group"><label>⏰ 時間</label><input type="text" id="profileTime"></div>
                 <div class="input-group">
-                    <label>🛵 車両タイプ</label>
+                    <label>📍 メイン稼働エリア</label>
+                    <input type="text" id="profileArea" placeholder="例：葛西・西葛西周辺">
+                </div>
+                <div class="input-group">
+                    <label>⏰ メイン稼働時間</label>
+                    <input type="text" id="profileTime" placeholder="例：夜ピーク〜深夜">
+                </div>
+                
+                <div class="input-group">
+                    <label>🛵 車両タイプ（複数可）</label>
                     <div class="checkbox-group">
                         <label><input type="checkbox" name="vehicleTag" value="🚲 自転車"> 自転車</label>
                         <label><input type="checkbox" name="vehicleTag" value="🛵 125cc以下"> 125cc以下</label>
@@ -159,18 +174,27 @@
                         <label><input type="checkbox" name="vehicleTag" value="🚗 軽貨物"> 軽貨物</label>
                     </div>
                 </div>
+
                 <div class="input-group">
-                    <label>🎒 登録サービス</label>
+                    <label>🎒 登録サービス（複数可）</label>
                     <div class="checkbox-group">
                         <label><input type="checkbox" name="serviceTag" value="⬛ Uber"> Uber</label>
                         <label><input type="checkbox" name="serviceTag" value="🟥 出前館"> 出前館</label>
                         <label><input type="checkbox" name="serviceTag" value="🟡 Wolt"> Wolt</label>
                         <label><input type="checkbox" name="serviceTag" value="🔴 MENU"> MENU</label>
+                        <label><input type="checkbox" name="serviceTag" value="📦 その他"> その他</label>
                     </div>
                 </div>
-                <button id="saveProfileBtn" class="submit-opinion-btn" style="background:#06C167; margin-bottom: 8px;">💾 保存</button>
+                
+                <button id="saveProfileBtn" class="submit-opinion-btn" style="background:#06C167; margin-bottom: 8px;">💾 保存して確定</button>
                 <button id="cancelEditBtn" class="popup-btn-outline" style="color:#DC3545; border-color:#DC3545;">❌ キャンセル</button>
             </div>
+
+            <hr class="menu-divider">
+            
+            <h2>フィードバックボックス</h2>
+            <textarea id="opinionInput" placeholder="ご意見を入力してください..."></textarea>
+            <button id="submitOpinionBtn" class="submit-opinion-btn">フィードバックを送信</button>
         </div>
     </div>
 
@@ -181,10 +205,12 @@
             <h2 id="modalName">-</h2>
             <span id="modalBadge" class="badge-text"></span>
         </div>
-        <p style="margin: 5px 0 15px 0; font-size: 0.9em; color:#545454;">応援数: 👍 <span id="modalLikesCount" style="font-weight:bold; color:#FF3366;">0</span></p>
-        <div class="modal-section"><h3>📍 エリア</h3><p id="modalArea"></p></div>
-        <div class="modal-section"><h3>⏰ 時間</h3><p id="modalTime"></p></div>
-        <div class="modal-section"><h3>🛵 車両</h3><div id="modalTags" class="tags-container"></div></div>
+        <p style="margin: 5px 0 15px 0; font-size: 0.9em; color:#545454;">獲得応援数: 👍 <span id="modalLikesCount" style="font-weight:bold; color:#FF3366;">0</span> 回</p>
+
+        <div class="modal-section"><h3>📍 メインエリア</h3><p id="modalArea">未設定</p></div>
+        <div class="modal-section"><h3>⏰ メイン稼働時間</h3><p id="modalTime">未設定</p></div>
+        <div class="modal-section"><h3>🛵 車両＆サービス</h3><div id="modalTags" class="tags-container"></div></div>
+        
         <button id="modalLikeBtn" class="modal-action-btn">👍 応援を送る</button>
     </div>
 

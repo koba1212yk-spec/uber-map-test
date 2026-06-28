@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getFirestore, collection, doc, setDoc, getDocs, updateDoc, increment, getDoc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-// 📷 Storageの機能を追加インポート
 import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-storage.js";
 
 if ('serviceWorker' in navigator) {
@@ -18,29 +17,40 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app); // Storageを起動
+const storage = getStorage(app);
 
 let currentUserName = "";
 let isMemoMode = false;
-let selectedImageDataUrl = null; // 圧縮済みの写真データ
+let selectedImageDataUrl = null;
 
 const map = L.map('map').setView([35.6635, 139.8731], 14);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', { maxZoom: 20 }).addTo(map);
 
-// 🟢 レイヤー（階層）を綺麗に分割
-const driverLayer = L.layerGroup().addTo(map); // 配達員ピン用
+const driverLayer = L.layerGroup().addTo(map);
 const memoClusterLayer = L.markerClusterGroup({ 
-    maxClusterRadius: 40, // 近づくとまとまる距離
-    disableClusteringAtZoom: 18 // 最大ズーム時は必ずバラける
+    maxClusterRadius: 40,
+    disableClusteringAtZoom: 18
 }).addTo(map);
 
-// ----- ログイン＆チェックイン処理 -----
+// 座標・時間入力欄の開閉
 document.querySelectorAll('input[name="posMode"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
         document.getElementById('manualCoordsArea').style.display = (e.target.value === 'manual') ? 'block' : 'none';
     });
 });
 
+// ドロワーメニューの開閉 【プロフィール更新処理を紐付け】
+document.getElementById('menuBtn').addEventListener('click', async () => {
+    document.getElementById('drawerMenu').classList.add('open');
+    if (currentUserName) {
+        await updateMyProfileInDrawer();
+    }
+});
+document.getElementById('closeMenuBtn').addEventListener('click', () => {
+    document.getElementById('drawerMenu').classList.remove('open');
+});
+
+// チェックイン処理
 document.getElementById('actionBtn').addEventListener('click', async () => {
     const name = document.getElementById('nameInput').value.trim();
     const msg = document.getElementById('msgInput').value.trim(); 
@@ -65,20 +75,25 @@ document.getElementById('actionBtn').addEventListener('click', async () => {
 });
 
 async function sendCheckIn(name, msg, lat, lng, updateTime) {
-    await setDoc(doc(db, "locations", name), {
-        displayName: name, statusMessage: msg, latitude: lat, longitude: lng,
-        updatedAt: updateTime, checkInCount: increment(1)
-    }, { merge: true });
-    
-    document.getElementById('loginPage').style.display = 'none';
-    document.getElementById('mapPage').style.display = 'block';
-    document.getElementById('userGreeting').textContent = `${name} さん`;
-    map.invalidateSize(); 
-    await loadMarkers(lat, lng);
-    await loadMemos();
+    try {
+        await setDoc(doc(db, "locations", name), {
+            displayName: name, statusMessage: msg, latitude: lat, longitude: lng,
+            updatedAt: updateTime, checkInCount: increment(1)
+        }, { merge: true });
+        
+        document.getElementById('statusMessage').textContent = "";
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('mapPage').style.display = 'block';
+        document.getElementById('userGreeting').textContent = `${name} さん`;
+        map.invalidateSize(); 
+        await loadMarkers(lat, lng);
+        await loadMemos();
+    } catch (e) {
+        console.error(e);
+    }
 }
 
-// ----- 表示フィルターの連動 -----
+// 表示フィルターの連動
 document.getElementById('btnFilterMenu').addEventListener('click', () => {
     const menu = document.getElementById('filterMenu');
     menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
@@ -90,11 +105,10 @@ document.getElementById('chkFilterDrivers').addEventListener('change', () => {
 document.getElementById('chkFilterAllMemos').addEventListener('change', loadMemos);
 document.getElementById('chkFilterMyMemos').addEventListener('change', loadMemos);
 
-
-// ----- 配達員の読み込み -----
+// 配達員の読み込み
 async function loadMarkers(myLat, myLng) {
     driverLayer.clearLayers();
-    if (!document.getElementById('chkFilterDrivers').checked) return; // フィルターオフなら処理しない
+    if (!document.getElementById('chkFilterDrivers').checked) return;
 
     const snapshot = await getDocs(collection(db, "locations"));
     const now = new Date();
@@ -123,10 +137,10 @@ async function loadMarkers(myLat, myLng) {
         marker.bindPopup(`
             <div style="min-width:150px; color:#000;">
                 <b>${data.displayName}</b> <span style="color:#06C167; font-weight:bold;">[${badge}]</span><br>
-                <span style="color:#545454; font-size:0.8em;">更新: ${timeStr} | 👍応援: <b>${data.likesCount || 0}</b></span>
+                <span style="color:#545454; font-size:0.8em;">更新: ${timeStr} | 👍応援: <b>${data.likesCount || 0}</b>回</span>
                 ${data.statusMessage ? `<p style="margin:6px 0; padding:8px; background:#F6F6F6; border-radius:6px;">「${data.statusMessage}」</p>` : ""}
                 <button onclick="sendLike('${data.displayName}')" class="popup-btn">👍 応援を送る</button>
-                <button onclick="window.openProfileModal('${data.displayName}', '${badge}')" class="popup-btn-outline">👤 プロフを見る</button>
+                <button onclick="window.openProfileModal('${data.displayName}', '${badge}')" class="popup-btn-outline">👤 プロフィールを見る</button>
             </div>
         `);
         driverLayer.addLayer(marker);
@@ -134,7 +148,171 @@ async function loadMarkers(myLat, myLng) {
     if(myLat && myLng) map.setView([myLat, myLng], 14);
 }
 
-// ----- 📷 スマホ側での画像超圧縮ロジック -----
+window.sendLike = async (targetName) => {
+    try {
+        await updateDoc(doc(db, "locations", targetName), { likesCount: increment(1) });
+        alert(`${targetName} さんに応援を送信しました！👍`);
+        if (targetName === currentUserName) {
+            await updateMyProfileInDrawer();
+        }
+        const center = map.getCenter();
+        await loadMarkers(center.lat, center.lng);
+    } catch (error) {
+        console.error(error);
+    }
+};
+
+// ----- ⚙️ マイプロフィール情報のドロワー反映＆復元 【完全復活】 -----
+async function updateMyProfileInDrawer() {
+    try {
+        // ① locations（リアルタイム情報）の反映
+        const docSnap = await getDoc(doc(db, "locations", currentUserName));
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const count = data.checkInCount || 0;
+            let badge = count >= 30 ? "👑レジェンド" : (count >= 15 ? "🏅ベテラン" : (count >= 5 ? "🚴中堅" : "🔰新米"));
+
+            document.getElementById('myProfileName').textContent = data.displayName;
+            document.getElementById('myProfileMsg').textContent = data.statusMessage ? `「${data.statusMessage}」` : "（未設定）";
+            document.getElementById('myProfileCount').textContent = count;
+            document.getElementById('myProfileBadge').textContent = badge;
+            document.getElementById('myProfileLikes').textContent = data.likesCount || 0;
+        }
+
+        // ② profiles（基本固定情報）の反映とチェックボックス復元
+        const profileSnap = await getDoc(doc(db, "profiles", currentUserName));
+        if (profileSnap.exists()) {
+            const pData = profileSnap.data();
+            
+            // 閲覧モードに反映
+            document.getElementById('readArea').textContent = pData.mainArea || "未設定";
+            document.getElementById('readTime').textContent = pData.mainTime || "未設定";
+            
+            const tagsContainer = document.getElementById('readTags');
+            tagsContainer.innerHTML = "";
+            const allTags = [...(pData.vehicles || []), ...(pData.services || [])];
+            if (allTags.length === 0) {
+                tagsContainer.innerHTML = "<span style='font-size:0.85em; color:#767676;'>未設定</span>";
+            } else {
+                allTags.forEach(tagText => {
+                    const span = document.createElement('span');
+                    span.className = 'tag'; 
+                    span.textContent = tagText;
+                    tagsContainer.appendChild(span);
+                });
+            }
+
+            // 編集モードの入力欄にも反映
+            document.getElementById('profileArea').value = pData.mainArea || "";
+            document.getElementById('profileTime').value = pData.mainTime || "";
+            
+            document.querySelectorAll('input[name="vehicleTag"]').forEach(cb => {
+                cb.checked = pData.vehicles ? pData.vehicles.includes(cb.value) : false;
+            });
+            document.querySelectorAll('input[name="serviceTag"]').forEach(cb => {
+                cb.checked = pData.services ? pData.services.includes(cb.value) : false;
+            });
+        }
+    } catch (error) {
+        console.error("プロフィール同期エラー: ", error);
+    }
+}
+
+// プロフィールモードの表示切り替え 【完全復活】
+document.getElementById('editProfileBtn').addEventListener('click', () => {
+    document.getElementById('profileReadMode').style.display = 'none';
+    document.getElementById('profileEditMode').style.display = 'block';
+});
+document.getElementById('cancelEditBtn').addEventListener('click', () => {
+    document.getElementById('profileEditMode').style.display = 'none';
+    document.getElementById('profileReadMode').style.display = 'block';
+});
+
+// プロフィール保存処理 【完全復活】
+document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+    if (!currentUserName) return;
+    const area = document.getElementById('profileArea').value.trim();
+    const time = document.getElementById('profileTime').value.trim();
+    const vehicles = Array.from(document.querySelectorAll('input[name="vehicleTag"]:checked')).map(el => el.value);
+    const services = Array.from(document.querySelectorAll('input[name="serviceTag"]:checked')).map(el => el.value);
+
+    try {
+        await setDoc(doc(db, "profiles", currentUserName), {
+            mainArea: area, mainTime: time, vehicles: vehicles, services: services, updatedAt: new Date()
+        }, { merge: true });
+        
+        await updateMyProfileInDrawer();
+        document.getElementById('profileEditMode').style.display = 'none';
+        document.getElementById('profileReadMode').style.display = 'block';
+        alert("プロフィールを保存しました！");
+    } catch (error) {
+        console.error("プロフィール保存エラー:", error);
+    }
+});
+
+// 👤 中央モーダルを開く処理
+window.openProfileModal = async (targetName, badge) => {
+    document.getElementById('modalName').textContent = targetName;
+    document.getElementById('modalBadge').textContent = badge;
+    document.getElementById('modalLikesCount').textContent = "-";
+    
+    document.getElementById('modalArea').textContent = "読み込み中...";
+    document.getElementById('modalTime').textContent = "読み込み中...";
+    const tagsContainer = document.getElementById('modalTags');
+    tagsContainer.innerHTML = "";
+
+    document.getElementById('modalOverlay').style.display = 'block';
+    document.getElementById('profileModal').style.display = 'block';
+
+    try {
+        const locSnap = await getDoc(doc(db, "locations", targetName));
+        if (locSnap.exists()) {
+            document.getElementById('modalLikesCount').textContent = locSnap.data().likesCount || 0;
+        }
+
+        const docSnap = await getDoc(doc(db, "profiles", targetName));
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            document.getElementById('modalArea').textContent = data.mainArea || "未設定";
+            document.getElementById('modalTime').textContent = data.mainTime || "未設定";
+            
+            const allTags = [...(data.vehicles || []), ...(data.services || [])];
+            if (allTags.length === 0) {
+                tagsContainer.innerHTML = "<span style='font-size:0.85em; color:#767676;'>未設定</span>";
+            } else {
+                allTags.forEach(tagText => {
+                    const span = document.createElement('span');
+                    span.className = 'tag'; span.textContent = tagText;
+                    tagsContainer.appendChild(span);
+                });
+            }
+        } else {
+            document.getElementById('modalArea').textContent = "未設定";
+            document.getElementById('modalTime').textContent = "未設定";
+            tagsContainer.innerHTML = "<span style='font-size:0.85em; color:#767676;'>未設定</span>";
+        }
+    } catch (error) {
+        console.error(error);
+    }
+
+    const likeBtn = document.getElementById('modalLikeBtn');
+    likeBtn.onclick = () => {
+        window.sendLike(targetName);
+        document.getElementById('modalOverlay').style.display = 'none';
+        document.getElementById('profileModal').style.display = 'none';
+    };
+};
+
+document.getElementById('closeModalBtn').addEventListener('click', () => {
+    document.getElementById('modalOverlay').style.display = 'none';
+    document.getElementById('profileModal').style.display = 'none';
+});
+document.getElementById('modalOverlay').addEventListener('click', () => {
+    document.getElementById('modalOverlay').style.display = 'none';
+    document.getElementById('profileModal').style.display = 'none';
+});
+
+// ----- 📷 画像圧縮ロジック -----
 function compressImage(file, maxWidth = 800) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -142,16 +320,11 @@ function compressImage(file, maxWidth = 800) {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                if (width > maxWidth) {
-                    height = Math.round((height * maxWidth) / width);
-                    width = maxWidth;
-                }
+                let width = img.width; let height = img.height;
+                if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
                 canvas.width = width; canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                // 容量を激減させる魔法の処理（70%の画質のJPEGに変換）
                 resolve(canvas.toDataURL('image/jpeg', 0.7)); 
             };
             img.src = e.target.result;
@@ -160,19 +333,16 @@ function compressImage(file, maxWidth = 800) {
     });
 }
 
-// 写真選択時のプレビュー表示
 document.getElementById('memoImageInput').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     document.getElementById('memoImageBtnText').textContent = "⏳ 圧縮中...";
     selectedImageDataUrl = await compressImage(file);
-    
     document.getElementById('memoImagePreview').src = selectedImageDataUrl;
     document.getElementById('memoImagePreviewContainer').style.display = 'block';
     document.querySelector('.image-upload-btn').style.display = 'none';
 });
 
-// 写真の取り消し
 document.getElementById('btnRemoveImage').addEventListener('click', () => {
     selectedImageDataUrl = null;
     document.getElementById('memoImageInput').value = "";
@@ -181,8 +351,7 @@ document.getElementById('btnRemoveImage').addEventListener('click', () => {
     document.getElementById('memoImageBtnText').textContent = "📸 写真を選ぶ";
 });
 
-
-// ----- 📝 攻略メモの保存と読み込み -----
+// ----- 📝 メモの保存と読み込み -----
 document.getElementById('btnSaveMemo').addEventListener('click', async () => {
     const text = document.getElementById('memoTextInput').value.trim();
     if (!text && !selectedImageDataUrl) { alert("メモか写真のどちらかは必要です！"); return; }
@@ -196,7 +365,6 @@ document.getElementById('btnSaveMemo').addEventListener('click', async () => {
 
     try {
         let finalImageUrl = null;
-        // 写真があればStorageへ送信
         if (selectedImageDataUrl) {
             const fileName = `memos/${Date.now()}_${currentUserName}.jpg`;
             const storageRef = ref(storage, fileName);
@@ -204,20 +372,17 @@ document.getElementById('btnSaveMemo').addEventListener('click', async () => {
             finalImageUrl = await getDownloadURL(storageRef);
         }
 
-        // Firestoreへ文字データと写真URLを保存
         await addDoc(collection(db, "memos"), {
-            lat: center.lat, lng: center.lng,
-            category: category, text: text,
-            imageUrl: finalImageUrl,
-            sender: currentUserName, createdAt: new Date()
+            lat: center.lat, lng: center.lng, category: category, text: text,
+            imageUrl: finalImageUrl, sender: currentUserName, createdAt: new Date()
         });
         
         alert("攻略メモを登録しました！");
-        document.getElementById('btnRemoveImage').click(); // 写真リセット
+        document.getElementById('btnRemoveImage').click();
         closeMemoMode();
         await loadMemos();
     } catch (e) {
-        console.error("保存エラー:", e);
+        console.error(e);
         alert("保存に失敗しました。");
     } finally {
         saveBtn.disabled = false;
@@ -227,18 +392,15 @@ document.getElementById('btnSaveMemo').addEventListener('click', async () => {
 
 async function loadMemos() {
     memoClusterLayer.clearLayers();
-    
     const showAll = document.getElementById('chkFilterAllMemos').checked;
     const showMine = document.getElementById('chkFilterMyMemos').checked;
-    if (!showAll && !showMine) return; // 両方オフなら何も出さない
+    if (!showAll && !showMine) return;
 
     const snapshot = await getDocs(collection(db, "memos"));
     
     snapshot.forEach((docSnap) => {
         const data = docSnap.data();
         const isMine = (data.sender === currentUserName);
-        
-        // フィルターによる弾き処理
         if (isMine && !showMine) return;
         if (!isMine && !showAll) return;
 
@@ -246,7 +408,6 @@ async function loadMemos() {
         const icon = L.divIcon({ className: 'memo-custom-pin', html: `<div>${emoji}</div>`, iconSize:[36,36], iconAnchor:[18,18], popupAnchor:[0,-18] });
         const marker = L.marker([data.lat, data.lng], { icon: icon });
 
-        // 🖼️ 画像がある場合はサムネイルHTMLを生成
         let imgHtml = "";
         if (data.imageUrl) {
             imgHtml = `<img src="${data.imageUrl}" onclick="openImageViewer('${data.imageUrl}')" style="width:100%; height:120px; object-fit:cover; border-radius:6px; margin-top:8px; cursor:pointer; border:1px solid #E2E2E2;">`;
@@ -267,7 +428,11 @@ async function loadMemos() {
     });
 }
 
-// ----- その他・UI制御 -----
+window.deleteMemo = async (id) => {
+    if(!confirm("このメモを削除しますか？")) return;
+    await deleteDoc(doc(db, "memos", id)); map.closePopup(); await loadMemos();
+};
+
 window.openImageViewer = (url) => {
     document.getElementById('fullSizeImage').src = url;
     document.getElementById('imageViewerOverlay').style.display = 'block';
@@ -305,27 +470,20 @@ const closeMemoMode = () => {
 document.getElementById('btnCancelMemo').addEventListener('click', closeMemoMode);
 document.getElementById('btnCancelForm').addEventListener('click', closeMemoMode);
 
-window.deleteMemo = async (id) => {
-    if(!confirm("削除しますか？")) return;
-    await deleteDoc(doc(db, "memos", id)); map.closePopup(); await loadMemos();
-};
-window.sendLike = async (name) => {
-    await updateDoc(doc(db, "locations", name), { likesCount: increment(1) });
-    alert(`${name} さんを応援しました！`);
-};
 
-// メニューやプロフィールの基本処理（省略せずそのまま）
-document.getElementById('menuBtn').addEventListener('click', async () => {
-    document.getElementById('drawerMenu').classList.add('open');
-    if (currentUserName) {
-        const docSnap = await getDoc(doc(db, "locations", currentUserName));
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            document.getElementById('myProfileName').textContent = data.displayName;
-            document.getElementById('myProfileMsg').textContent = data.statusMessage || "（未設定）";
-            document.getElementById('myProfileCount').textContent = data.checkInCount || 0;
-            document.getElementById('myProfileLikes').textContent = data.likesCount || 0;
-        }
+// ----- 📩 フィードバック送信処理 【完全復活】 -----
+document.getElementById('submitOpinionBtn').addEventListener('click', async () => {
+    const opinionText = document.getElementById('opinionInput').value.trim();
+    if (!opinionText) { alert('ご意見を入力してください。'); return; }
+    try {
+        await addDoc(collection(db, "opinions"), {
+            text: opinionText,
+            sender: currentUserName || "匿名ユーザー",
+            createdAt: new Date()
+        });
+        alert('フィードバックを送信しました。ご協力ありがとうございます！');
+        document.getElementById('opinionInput').value = ""; 
+    } catch (error) {
+        console.error("フィードバック送信エラー: ", error);
     }
 });
-document.getElementById('closeMenuBtn').addEventListener('click', () => document.getElementById('drawerMenu').classList.remove('open'));
