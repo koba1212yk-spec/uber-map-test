@@ -1,68 +1,63 @@
-/* ベース設定 (PWAフルスクリーン) */
-body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: "Google Sans", -apple-system, BlinkMacSystemFont, Roboto, sans-serif; background: #FFFFFF; color: #202124; overflow: hidden; }
+/* ベース設定 (フルスクリーン) */
+body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: "Google Sans", -apple-system, BlinkMacSystemFont, Roboto, sans-serif; background: #F8F9FA; color: #202124; overflow: hidden; }
 * { box-sizing: border-box; }
 
-/* ページセクション */
-.page-section { position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 56px - env(safe-area-inset-bottom)); overflow-y: auto; background: #FFFFFF; }
+/* ページセクション (マップは背面へ敷き詰める) */
+.page-section { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow-y: auto; background: #FFFFFF; }
 #mapPage { overflow: hidden; }
 
-/* 🗺️ マップエリア */
-#map { width: 100%; height: 100%; background: #E5E3DF; }
+/* 🗺️ マップエリア (画面限界まで広げる) */
+#map { width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; background: #E5E3DF; }
 
-/* 🔍 上部 Google風 住所検索バー (ピル型) */
-.google-search-bar { position: absolute; top: env(safe-area-inset-top, 15px); left: 15px; right: 15px; z-index: 10; display: flex; align-items: center; background: #FFFFFF; padding: 0 16px; height: 48px; border-radius: 24px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-.search-icon { font-size: 1.2em; color: #5F6368; margin-right: 10px; }
+/* 🔍 住所検索バー (カメラ穴を避けて浮遊) */
+.google-search-bar { position: absolute; top: calc(env(safe-area-inset-top, 15px) + 10px); left: 15px; right: 15px; z-index: 10; display: flex; align-items: center; background: #FFFFFF; padding: 0 16px; height: 48px; border-radius: 24px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+.search-icon { display: flex; align-items: center; margin-right: 10px; }
 .google-search-bar input { flex: 1; border: none; font-size: 1em; color: #202124; outline: none; background: transparent; }
 .google-search-bar input::placeholder { color: #70757A; }
-.google-search-bar button { display: none; } /* エンターキーで検索するためボタンは隠す */
 
-/* 📱 ボトムナビゲーション (Google Maps風) */
-.bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: calc(56px + env(safe-area-inset-bottom)); background: #FFFFFF; border-top: 1px solid #E8EAED; display: flex; justify-content: space-around; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; box-shadow: 0 -1px 4px rgba(0,0,0,0.05); }
-.nav-tab { flex: 1; background: none; border: none; color: #5F6368; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 6px; transition: color 0.2s; }
-.nav-tab span { font-size: 0.65em; font-weight: 500; margin-top: 4px; }
-.nav-tab.active { color: #1A73E8; } /* Google Blue */
+/* 📱 ボトムナビゲーション (Google Maps/Material 3仕様) */
+.bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: calc(80px + env(safe-area-inset-bottom)); background: #F8F9FA; border-top: 1px solid #E8EAED; display: flex; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; }
+.nav-tab { background: none; border: none; color: #444746; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 80px; }
+.nav-icon-container { width: 64px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 16px; transition: background 0.2s, color 0.2s; }
+.nav-tab span { font-size: 0.7em; font-weight: 500; margin-top: 4px; transition: color 0.2s; }
+/* アクティブ時の青いカプセルハイライト */
+.nav-tab.active .nav-icon-container { background: #C2E7FF; color: #001D35; }
+.nav-tab.active span { color: #001D35; font-weight: 600; }
 
-/* マップ右下 UIボタン */
-.map-controls-container { position: absolute; bottom: 20px; right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 12px; align-items: flex-end; }
+/* マップ右下 コントロールボタン群 */
+.map-controls-container { position: absolute; bottom: calc(100px + env(safe-area-inset-bottom)); right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 12px; }
 .control-circle-btn { width: 48px; height: 48px; background: #FFFFFF; border: none; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer; display: flex; justify-content: center; align-items: center; }
-.control-main-btn { padding: 0 20px; height: 48px; background: #FFFFFF; color: #1A73E8; border: none; border-radius: 24px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); font-weight: bold; font-size: 0.95em; cursor: pointer; display: flex; align-items: center; }
 
 /* 🔵 現在地の青いパルスドット */
-.current-location-dot { width: 16px; height: 16px; background-color: #4285F4; border: 2.5px solid #FFFFFF; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.3); position: relative; }
-.current-location-dot::after { content: ''; position: absolute; top: -14.5px; left: -14.5px; width: 40px; height: 40px; background-color: rgba(66, 133, 244, 0.4); border-radius: 50%; animation: pulse-blue 2s infinite ease-out; }
+.current-location-dot { width: 18px; height: 18px; background-color: #4285F4; border: 3px solid #FFFFFF; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.3); position: relative; }
+.current-location-dot::after { content: ''; position: absolute; top: -14px; left: -14px; width: 40px; height: 40px; background-color: rgba(66, 133, 244, 0.4); border-radius: 50%; animation: pulse-blue 2s infinite ease-out; }
 @keyframes pulse-blue { 0% { transform: scale(0.2); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
 
-/* 照準器 */
-.map-center-target { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; z-index: 5; pointer-events: none; }
-.target-cross-v { position: absolute; top: 0; left: 19px; width: 2px; height: 40px; background: #1A73E8; }
-.target-cross-h { position: absolute; top: 19px; left: 0; width: 40px; height: 2px; background: #1A73E8; }
-.target-center-dot { position: absolute; top: 16px; left: 16px; width: 8px; height: 8px; background: #1A73E8; border-radius: 50%; border: 2px solid #FFF; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-
-/* 共通ボトムシートスタイル (入力パネル & 詳細パネル) */
-.memo-action-panel, .bottom-sheet { position: absolute; bottom: 0; left: 0; width: 100%; background: #FFFFFF; z-index: 15; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)) 20px; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 16px rgba(0,0,0,0.15); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.memo-action-panel.show, .bottom-sheet.show { transform: translateY(0); }
+/* ボトムシート共通 */
+.bottom-sheet { position: absolute; bottom: 0; left: 0; width: 100%; background: #FFFFFF; z-index: 15; padding: 20px 20px calc(90px + env(safe-area-inset-bottom)) 20px; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 16px rgba(0,0,0,0.15); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.bottom-sheet.show { transform: translateY(0); }
 .drag-handle { width: 36px; height: 4px; background: #DADCE0; border-radius: 2px; margin: -10px auto 15px auto; }
 
-/* 汎用ボタン群 */
-.btn-main-blue { padding: 12px; background: #1A73E8; color: #FFF; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1em; }
+/* 汎用ボタン */
+.btn-main-blue { padding: 12px; background: #1A73E8; color: #FFF; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1em; display: flex; justify-content: center; align-items: center; }
 .btn-outline-blue { padding: 12px; background: transparent; color: #1A73E8; border: 1px solid #1A73E8; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
 .btn-text-gray { padding: 12px; background: transparent; color: #5F6368; border: none; font-weight: bold; cursor: pointer; }
 .action-btn-light { padding: 8px 16px; background: #F1F3F4; color: #202124; border: none; border-radius: 16px; font-weight: bold; cursor: pointer; font-size: 0.9em; display: flex; align-items: center; gap: 6px; }
 .action-btn-danger { padding: 8px 16px; background: transparent; color: #D93025; border: 1px solid #D93025; border-radius: 16px; font-weight: bold; cursor: pointer; font-size: 0.9em; }
 
-/* 入力フォーム (明るいUI) */
+/* 入力フォーム群 */
 textarea, input[type="text"] { width: 100%; padding: 12px; border: 1px solid #DADCE0; background: #F8F9FA; color: #202124; border-radius: 8px; font-size: 1em; font-family: inherit; resize: none; margin-bottom: 12px; }
 textarea:focus, input[type="text"]:focus { outline: none; border-color: #1A73E8; background: #FFFFFF; }
 .category-selector { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .cat-chip input { display: none; }
-.cat-chip span { display: inline-block; padding: 6px 12px; background: #F1F3F4; border: 1px solid #F1F3F4; color: #3C4043; border-radius: 20px; font-size: 0.85em; font-weight: 500; cursor: pointer; }
+.cat-chip span { display: inline-block; padding: 6px 12px; background: #FFFFFF; border: 1px solid #DADCE0; color: #3C4043; border-radius: 20px; font-size: 0.85em; font-weight: 500; cursor: pointer; transition: 0.2s; }
 .cat-chip input:checked + span { background: #E8F0FE; color: #1A73E8; border-color: #1A73E8; }
 .image-upload-row { display: flex; gap: 10px; }
 .image-upload-btn { flex: 1; padding: 10px; background: #FFFFFF; border: 1px dashed #BDC1C6; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; color: #5F6368; font-size: 0.9em; }
 .toggle-name-label { display: flex; align-items: center; gap: 10px; font-size: 0.85em; color: #5F6368; margin-top: 10px; cursor: pointer; }
 .toggle-name-label input { accent-color: #1A73E8; width: 18px; height: 18px; }
 
-/* 🆕 メモ詳細ボトムシートの中身 */
+/* メモ詳細ボトムシートの中身 */
 .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .sheet-header h2 { margin: 0; font-size: 1.3em; color: #202124; }
 .sheet-meta { font-size: 0.85em; color: #70757A; }
@@ -72,11 +67,13 @@ textarea:focus, input[type="text"]:focus { outline: none; border-color: #1A73E8;
 .author-icon { width: 32px; height: 32px; background: #E8EAED; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2em; }
 .sheet-actions { display: flex; gap: 10px; }
 
-/* 👤 プロフィール画面 */
+/* MapLibre 吹き出し(Popup)の微調整 */
+.maplibregl-popup-content { padding: 8px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+
+/* プロフィール画面・その他UI */
 .profile-page-container { padding: calc(20px + env(safe-area-inset-top)) 20px 20px 20px; background: #F8F9FA; }
 .profile-page-title { font-size: 1.1em; margin-bottom: 15px; color: #202124; font-weight: bold; }
 .profile-card { background: #FFFFFF; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; }
-.profile-card p { margin: 8px 0; font-size: 0.95em; color: #3C4043; text-align: left; }
 .profile-avatar-large { width: 64px; height: 64px; background: #E8F0FE; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2em; margin: 0 auto; }
 .input-group label { display: block; font-size: 0.85em; color: #5F6368; margin-bottom: 6px; font-weight: bold; }
 .checkbox-group { display: flex; flex-direction: column; gap: 8px; background: #FFFFFF; padding: 12px; border-radius: 8px; border: 1px solid #DADCE0; }
@@ -86,28 +83,24 @@ textarea:focus, input[type="text"]:focus { outline: none; border-color: #1A73E8;
 .feedback-textarea { height: 100px; background: #FFFFFF; }
 .copyright-notice { margin-top: 40px; padding: 20px; text-align: center; font-size: 0.75em; color: #70757A; line-height: 1.6; }
 .copyright-notice a { color: #1A73E8; text-decoration: none; }
-
-/* モーダル */
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; backdrop-filter: blur(2px); }
 .profile-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 320px; background: #FFFFFF; border-radius: 16px; padding: 24px; z-index: 3001; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
 .close-modal-btn { position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 1.5em; color: #5F6368; cursor: pointer; }
 
-/* ==========================================================================
-   🖤 匿名掲示板 (完全維持・ダークモード)
-   ========================================================================== */
+/* 🖤 匿名掲示板 (ダークモード維持) */
 .bbs-header { display: flex; align-items: center; padding: calc(15px + env(safe-area-inset-top)) 16px 15px 16px; border-bottom: 1px solid #2F3336; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 200; }
-.bbs-title { font-size: 1.2em; font-weight: 800; color: #E7E9EA; letter-spacing: -0.02em; }
-.twitter-fab { position: fixed; bottom: calc(76px + env(safe-area-inset-bottom)); right: 20px; width: 56px; height: 56px; background-color: #1d9bf0; color: white; border: none; border-radius: 50%; font-size: 28px; font-weight: bold; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 12px rgba(29,155,240,0.4); cursor: pointer; z-index: 250; }
+.bbs-title { font-size: 1.2em; font-weight: 800; color: #E7E9EA; }
+.twitter-fab { position: fixed; bottom: calc(100px + env(safe-area-inset-bottom)); right: 20px; width: 56px; height: 56px; background-color: #1A73E8; color: white; border: none; border-radius: 50%; font-size: 28px; font-weight: bold; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 12px rgba(26,115,232,0.4); cursor: pointer; z-index: 250; }
 .bbs-compose-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000000; color: #E7E9EA; z-index: 2000; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top); }
 .bbs-compose-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; }
 .bbs-compose-cancel { background: none; border: none; color: #EFF3F4; font-size: 1em; cursor: pointer; }
 .bbs-compose-body { display: flex; padding: 16px; gap: 12px; flex: 1; }
-.twitter-post-btn { background-color: #1d9bf0; color: #FFFFFF; border: none; padding: 6px 16px; font-weight: bold; border-radius: 9999px; cursor: pointer; }
+.twitter-post-btn { background-color: #1A73E8; color: #FFFFFF; border: none; padding: 6px 16px; font-weight: bold; border-radius: 9999px; cursor: pointer; }
 #bbsTextInput { width: 100%; border: none; background: transparent; color: #E7E9EA; font-size: 1.1em; outline: none; min-height: 80px; }
 .bbs-compose-image { width: 100%; max-height: 200px; object-fit: contain; background: #16181C; border-radius: 12px; margin: 0 auto; display: block; }
 .bbs-actions-bar { margin-top: 10px; border-top: 1px solid #2F3336; padding-top: 12px; }
-.bbs-media-buttons { display: flex; gap: 15px; color: #1d9bf0; font-size: 1.3em; }
-.bbs-timeline { display: flex; flex-direction: column; padding-bottom: 20px; }
+.bbs-media-buttons { display: flex; gap: 15px; color: #1A73E8; font-size: 1.3em; }
+.bbs-timeline { display: flex; flex-direction: column; padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
 .bbs-card { display: flex; padding: 14px 16px; border-bottom: 1px solid #2F3336; gap: 12px; background: #000000; }
 .bbs-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4em; flex-shrink: 0; }
 .twitter-avatar-mock { width: 44px; height: 44px; background-color: #333639; border-radius: 50%; }
@@ -120,5 +113,5 @@ textarea:focus, input[type="text"]:focus { outline: none; border-color: #1A73E8;
 .bbs-reaction { display: flex; align-items: center; gap: 6px; color: #71767B; font-size: 0.85em; cursor: pointer; }
 .rx-icon { font-size: 1.3em; filter: grayscale(100%) opacity(0.7); }
 .bbs-reaction.acted .rx-icon { filter: grayscale(0%) opacity(1); }
-.bbs-reaction.acted .rx-count { color: #1d9bf0; font-weight: bold; }
-.bbs-load-more-btn { margin: 16px; padding: 14px; background: #000000; border: 1px solid #2F3336; color: #1d9bf0; font-weight: bold; border-radius: 12px; text-align: center; }
+.bbs-reaction.acted .rx-count { color: #1A73E8; font-weight: bold; }
+.bbs-load-more-btn { margin: 16px; padding: 14px; background: #000000; border: 1px solid #2F3336; color: #1A73E8; font-weight: bold; border-radius: 12px; text-align: center; }

@@ -1,10 +1,10 @@
 {
-  "name": "Uber Driver Map",
-  "short_name": "DriverMap",
+  "name": "DeliMap",
+  "short_name": "DeliMap",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#06C167",
+  "theme_color": "#F8F9FA",
   "icons": [
     {
       "src": "icon-192.png",

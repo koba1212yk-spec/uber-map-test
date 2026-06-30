@@ -3,79 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Uber Driver Map (Pro)</title>
+    <title>DeliMap</title>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
 
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#FFFFFF">
+    <meta name="theme-color" content="#F8F9FA">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 
     <div id="mapPage" class="page-section active-page">
-        <div class="google-search-bar">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="addressSearchInput" placeholder="ここで検索 (例: 中葛西3丁目)">
-            <button id="btnSearchAddress">検索</button>
-        </div>
-
         <div id="map"></div>
 
+        <div class="google-search-bar">
+            <span class="search-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="#5F6368"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            </span>
+            <input type="text" id="addressSearchInput" placeholder="ここで検索 (例: 中葛西3丁目)">
+        </div>
+
         <div id="mapControlsContainer" class="map-controls-container">
+            <button id="btnFilterMemo" class="control-circle-btn" title="表示フィルター">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="#5F6368"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
+            </button>
             <button id="geoBackBtn" class="control-circle-btn" title="現在地に移動">
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="#5F6368"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
-            </button>
-            <button id="addMemoModeBtn" class="control-main-btn">
-                <span style="font-size: 1.2em; margin-right: 4px;">+</span> メモを残す
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="#1A73E8"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
             </button>
         </div>
 
-        <div id="mapCenterTarget" class="map-center-target" style="display:none;">
-            <div class="target-cross-v"></div>
-            <div class="target-cross-h"></div>
-            <div class="target-center-dot"></div>
-        </div>
-
-        <div id="memoActionPanel" class="memo-action-panel">
+        <div id="memoActionPanel" class="bottom-sheet">
             <div class="drag-handle"></div>
-            <div id="memoPhaseLoc">
-                <p class="panel-msg">地図を動かしてピンの位置を決めてください</p>
-                <button id="btnConfirmLoc" class="btn-main-blue">OK</button>
-                <button id="btnCancelMemoLoc" class="btn-text-gray">キャンセル</button>
+            <h3 style="margin-top:0; font-size:1.2em;">この場所にメモを追加</h3>
+            <div class="category-selector" style="margin-top:15px;">
+                <label class="cat-chip"><input type="checkbox" name="memoCatInput" value="🏢 建物・入口" checked><span>🏢 建物</span></label>
+                <label class="cat-chip"><input type="checkbox" name="memoCatInput" value="🅿️ 駐輪スポット"><span>🅿️ 駐輪</span></label>
+                <label class="cat-chip"><input type="checkbox" name="memoCatInput" value="⚠️ 注意・取締り"><span>⚠️ 注意</span></label>
+                <label class="cat-chip"><input type="checkbox" name="memoCatInput" value="🚻 トイレ・公園"><span>🚻 休憩</span></label>
+                <label class="cat-chip"><input type="checkbox" name="memoCatInput" value="💡 その他"><span>💡 その他</span></label>
             </div>
-            <div id="memoPhaseForm" style="display: none;">
-                <h3 style="margin-top:0;">攻略メモを追加</h3>
-                <div class="category-selector">
-                    <label class="cat-chip"><input type="radio" name="memoCat" value="🏢 建物・入口" checked><span>🏢 建物</span></label>
-                    <label class="cat-chip"><input type="radio" name="memoCat" value="🅿️ 駐輪スポット"><span>🅿️ 駐輪</span></label>
-                    <label class="cat-chip"><input type="radio" name="memoCat" value="⚠️ 注意・取締り"><span>⚠️ 注意</span></label>
-                    <label class="cat-chip"><input type="radio" name="memoCat" value="🚻 トイレ・公園"><span>🚻 休憩</span></label>
-                    <label class="cat-chip"><input type="radio" name="memoCat" value="💡 その他"><span>💡 その他</span></label>
-                </div>
-                <textarea id="memoTextInput" placeholder="タワマンの入り口は裏手です、等"></textarea>
-                
-                <div class="image-upload-row">
-                    <label class="image-upload-btn"><input type="file" id="memoCameraInput" accept="image/*" capture="environment" style="display:none;"><span id="memoCameraBtnText">📷 撮影</span></label>
-                    <label class="image-upload-btn"><input type="file" id="memoImageInput" accept="image/*" style="display:none;"><span id="memoImageBtnText">📁 画像</span></label>
-                </div>
-                <div id="memoImagePreviewContainer" style="display:none; position:relative; margin:10px 0;">
-                    <img id="memoImagePreview" src="" style="width:100%; max-height:150px; object-fit:contain; background:#F1F3F4; border-radius:8px;">
-                    <button id="btnRemoveImage" class="remove-img-btn">×</button>
-                </div>
-                
-                <label class="toggle-name-label">
-                    <input type="checkbox" id="chkShowName" checked>
-                    <span>自分のプロフィール名で投稿する（オフで匿名）</span>
-                </label>
+            <textarea id="memoTextInput" placeholder="タワマンの入り口は裏手です、等" style="margin-top:10px;"></textarea>
+            
+            <div class="image-upload-row">
+                <label class="image-upload-btn"><input type="file" id="memoCameraInput" accept="image/*" capture="environment" style="display:none;"><span id="memoCameraBtnText">📷 撮影</span></label>
+                <label class="image-upload-btn"><input type="file" id="memoImageInput" accept="image/*" style="display:none;"><span id="memoImageBtnText">📁 画像</span></label>
+            </div>
+            <div id="memoImagePreviewContainer" style="display:none; position:relative; margin:10px 0;">
+                <img id="memoImagePreview" src="" style="width:100%; max-height:150px; object-fit:contain; background:#F1F3F4; border-radius:8px;">
+                <button id="btnRemoveImage" class="remove-img-btn">×</button>
+            </div>
+            
+            <label class="toggle-name-label">
+                <input type="checkbox" id="chkShowName" checked>
+                <span>自分の名前で投稿する（オフで匿名）</span>
+            </label>
 
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button id="btnSaveMemo" class="btn-main-blue" style="flex:2;">投稿する</button>
-                    <button id="btnCancelForm" class="btn-text-gray" style="flex:1;">中止</button>
-                </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button id="btnSaveMemo" class="btn-main-blue" style="flex:2;">投稿する</button>
+                <button id="btnCancelForm" class="btn-text-gray" style="flex:1;">キャンセル</button>
             </div>
+        </div>
+
+        <div id="filterBottomSheet" class="bottom-sheet">
+            <div class="drag-handle"></div>
+            <h3 style="margin-top:0;">表示フィルター</h3>
+            <label class="toggle-name-label" style="font-size: 1em; padding: 10px 0; border-bottom: 1px solid #E8EAED; margin-bottom: 15px;">
+                <input type="checkbox" id="chkShowMineOnly">
+                <span style="color:#1A73E8; font-weight:bold;">自分のメモだけを表示</span>
+            </label>
+            <p style="font-size: 0.9em; font-weight:bold; color:#5F6368; margin-bottom: 8px;">カテゴリ絞り込み</p>
+            <div class="category-selector" id="filterCategoryContainer">
+                </div>
+            <button id="btnCloseFilter" class="btn-main-blue" style="width:100%; margin-top:20px;">適用して閉じる</button>
         </div>
 
         <div id="memoBottomSheet" class="bottom-sheet">
@@ -87,7 +88,7 @@
                 </div>
                 <p id="sheetText" class="sheet-text">読み込み中...</p>
                 <div id="sheetImageContainer" style="display: none; margin: 12px 0;">
-                    <img id="sheetImage" src="" style="width:100%; max-height:200px; object-fit:contain; border-radius:8px; background:#F1F3F4; cursor:pointer;">
+                    <img id="sheetImage" src="" style="width:100%; max-height:200px; object-fit:contain; border-radius:8px; background:#E8EAED; cursor:pointer;">
                 </div>
                 
                 <div class="sheet-footer">
@@ -96,9 +97,7 @@
                         <span id="sheetAuthorName">匿名ドライバー</span>
                     </div>
                     <div class="sheet-actions">
-                        <button id="btnLikeMemo" class="action-btn-light">
-                            ❤️ <span id="sheetLikeCount">0</span>
-                        </button>
+                        <button id="btnLikeMemo" class="action-btn-light">❤️ <span id="sheetLikeCount">0</span></button>
                         <button id="btnDeleteMemo" class="action-btn-danger" style="display: none;">削除</button>
                     </div>
                 </div>
@@ -107,9 +106,7 @@
     </div>
 
     <div id="bbsPage" class="page-section" style="display: none; background: #000;">
-        <div class="bbs-header">
-            <div class="bbs-title">葛西リアルタイム・タイムライン</div>
-        </div>
+        <div class="bbs-header"><div class="bbs-title">葛西リアルタイム・タイムライン</div></div>
         <div id="bbsList" class="bbs-timeline"></div>
         <button id="btnLoadMoreBbs" class="bbs-load-more-btn" style="display: none;">🔍 さらに読み込む</button>
         <button id="fabPostBtn" class="twitter-fab">+</button>
@@ -146,23 +143,29 @@
         <button id="submitOpinionBtn" class="btn-outline-blue">送信する</button>
 
         <div class="copyright-notice">
-            <p><strong>© 2026 DriverMap App. All Rights Reserved.</strong></p>
+            <p><strong>© 2026 DeliMap. All Rights Reserved.</strong></p>
             <p>当アプリのデザイン、レイアウト、および独自機能の無断転載・複製を固く禁じます。</p>
             <p class="attribution"><a href="https://www.maptiler.com/copyright/" target="_blank">© MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap contributors</a></p>
         </div>
-    </div>
+        <div style="height: 100px;"></div> </div>
 
     <nav class="bottom-nav">
         <button id="tabMap" class="nav-tab active">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            <div class="nav-icon-container">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            </div>
             <span>スポット</span>
         </button>
         <button id="tabBbs" class="nav-tab">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+            <div class="nav-icon-container">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+            </div>
             <span>つぶやき</span>
         </button>
         <button id="tabProfile" class="nav-tab">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+            <div class="nav-icon-container">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+            </div>
             <span>プロフィール</span>
         </button>
     </nav>
