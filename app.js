@@ -281,6 +281,7 @@ filterContainer.addEventListener('change', () => { filterState.categories = Arra
 
 // 📍 🆕 極細仮ピンを、検索バーとカードの「見える隙間」のド真ん中に持ってくる処理
 
+
 function openMemoAddSheet(lngLat) {
     targetLngLat = lngLat; 
     if (tempPinMarker) tempPinMarker.remove();
@@ -305,8 +306,6 @@ function openMemoAddSheet(lngLat) {
     document.getElementById('filterBottomSheet').classList.remove('show');
     document.getElementById('memoActionPanel').classList.add('show');
 }
-
-
 
 
 
@@ -354,6 +353,7 @@ async function loadMemosToMap() {
     });
     applyFilters();
 }
+
 function applyFilters() {
     if (!map.getSource('memos')) return;
     const features = [];
@@ -363,11 +363,25 @@ function applyFilters() {
         const emoji = data.category ? data.category.substring(0, 2) : "📝"; 
         features.push({
             type: 'Feature', geometry: { type: 'Point', coordinates: [data.lng, data.lat] },
-            properties: { id: data.id, emoji: emoji, category: data.category, text: data.text || "", imageUrl: data.imageUrl || "", senderId: data.senderId, senderName: data.senderName || "匿名", likesCount: data.likesCount || 0, createdAt: data.createdAt || 0 }
+            /* ⬇️ 🌟 propertiesの中に「lng: data.lng, lat: data.lat」を追加して、タップ時に座標を渡せるように修正しました！ */
+            properties: { id: data.id, emoji: emoji, category: data.category, text: data.text || "", imageUrl: data.imageUrl || "", senderId: data.senderId, senderName: data.senderName || "匿名", likesCount: data.likesCount || 0, createdAt: data.createdAt || 0, lng: data.lng, lat: data.lat }
         });
     });
     map.getSource('memos').setData({ type: 'FeatureCollection', features: features });
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // 📖 メモ詳細ボトムシート (時間正確表示バグ修正版)
 function openMemoBottomSheet(props) {
@@ -383,8 +397,18 @@ function openMemoBottomSheet(props) {
     document.getElementById('sheetTime').textContent = timeStr;
     
     const imgContainer = document.getElementById('sheetImageContainer');
-    if(props.imageUrl) { imgContainer.style.display = 'block'; document.getElementById('sheetImage').src = props.imageUrl; document.getElementById('sheetImage').onclick = () => openImageViewer(props.imageUrl); } 
-    else { imgContainer.style.display = 'none'; }
+    let bottomPadding = 300; // 🌟 画像「なし」の時の基本シート高（ピンを避ける余白）
+
+    if(props.imageUrl) { 
+        imgContainer.style.display = 'flex'; // 先ほど追加したCSSに合わせて flex にします
+        document.getElementById('sheetImage').src = props.imageUrl; 
+        document.getElementById('sheetImage').onclick = () => openImageViewer(props.imageUrl); 
+        bottomPadding = 520; // 🌟 画像「あり」の時はシートが高くなるので余白を増やす
+    } 
+    else { 
+        imgContainer.style.display = 'none'; 
+        document.getElementById('sheetImage').src = ""; // 前のメモの画像をクリア
+    }
     
     document.getElementById('sheetAuthorName').textContent = props.senderName;
     document.getElementById('sheetLikeCount').textContent = props.likesCount;
@@ -392,10 +416,23 @@ function openMemoBottomSheet(props) {
 
     document.getElementById('sheetAuthorContainer').onclick = () => { if (props.senderName !== "匿名ドライバー") openProfileModal(props.senderId, props.senderName); };
     
+    // 📍 🌟 画像の有無を考慮した「完璧な隙間の中央」へジャンプ
+    map.easeTo({
+        center: [props.lng, props.lat],
+        padding: { top: 90, bottom: bottomPadding, left: 0, right: 0 },
+        duration: 350
+    });
+
     document.getElementById('memoActionPanel').classList.remove('show');
     document.getElementById('filterBottomSheet').classList.remove('show');
     document.getElementById('memoBottomSheet').classList.add('show');
 }
+
+
+
+
+
+
 
 document.getElementById('btnLikeMemo').addEventListener('click', async () => {
     if(!currentOpenMemoId) return;
