@@ -67,11 +67,6 @@ const map = new maplibregl.Map({
     center: [139.8731, 35.6635], zoom: 14, attributionControl: false 
 });
 
-
-
-
-
-
 map.on('load', () => {
     // 📍 起動時に自動で現在地を取得してジャンプ
     navigator.geolocation.getCurrentPosition(pos => {
@@ -101,14 +96,25 @@ map.on('load', () => {
     map.addLayer({ id: 'clusters', type: 'circle', source: 'memos', filter: ['has', 'point_count'], paint: { 'circle-color': '#06C167', 'circle-radius': 18, 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
     map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'memos', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 14, 'text-font': ['Noto Sans Bold'] }, paint: { 'text-color': '#ffffff' } });
     
-    // 3️⃣ 枠の色をカテゴリーごとに塗り分ける
+    // 3️⃣ 枠の色をカテゴリーごとに塗り分ける（選択中は枠の色でベタ塗り！）
     map.addLayer({ 
         id: 'unclustered-point', 
         type: 'circle', 
         source: 'memos', 
         filter: ['!', ['has', 'point_count']], 
         paint: { 
-            'circle-color': '#FFFFFF', 
+            'circle-color': [
+                'case', ['get', 'isSelected'],
+                [
+                    'match', ['get', 'category'],
+                    '🏢 建物・入口', '#1A73E8',
+                    '🅿️ 駐輪スポット', '#34A853',
+                    '⚠️ 注意・取締り', '#EA4335',
+                    '🚻 トイレ・公園', '#FBBC04',
+                    '#9AA0A6'
+                ],
+                '#FFFFFF' // 通常時の白
+            ], 
             'circle-radius': 16, 
             'circle-stroke-width': 3, 
             'circle-stroke-color': [
@@ -122,7 +128,7 @@ map.on('load', () => {
         } 
     });
 
-    // 4️⃣ アイコンをピンの真ん中に表示
+    // 4️⃣ アイコンをピンの真ん中に表示（選択中はアイコンを真っ白にする！）
     map.addLayer({ 
         id: 'unclustered-icon', 
         type: 'symbol', 
@@ -134,20 +140,30 @@ map.on('load', () => {
             'icon-allow-overlap': true 
         },
         paint: {
-            'icon-color': [ // マテリアルアイコン自体の色を、ピンの枠色に合わせて変える
-                'match', ['get', 'category'],
-                '🏢 建物・入口', '#1A73E8',
-                '🅿️ 駐輪スポット', '#34A853',
-                '⚠️ 注意・取締り', '#EA4335',
-                '🚻 トイレ・公園', '#FBBC04',
-                '#9AA0A6'
+            'icon-color': [
+                'case', ['get', 'isSelected'],
+                '#FFFFFF', // 選択中は白
+                [
+                    'match', ['get', 'category'],
+                    '🏢 建物・入口', '#1A73E8',
+                    '🅿️ 駐輪スポット', '#34A853',
+                    '⚠️ 注意・取締り', '#EA4335',
+                    '🚻 トイレ・公園', '#FBBC04',
+                    '#9AA0A6'
+                ]
             ]
         }
     });
 
     // ▼ イベント
-    map.on('click', 'unclustered-point', (e) => openMemoBottomSheet(e.features[0].properties));
-    map.on('click', 'unclustered-icon', (e) => openMemoBottomSheet(e.features[0].properties));
+    map.on('click', 'unclustered-point', (e) => {
+        openMemoBottomSheet(e.features[0].properties);
+    });
+    
+    map.on('click', 'unclustered-icon', (e) => {
+        openMemoBottomSheet(e.features[0].properties);
+    });
+
     map.on('click', 'clusters', (e) => {
         const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
         map.getSource('memos').getClusterExpansionZoom(features[0].properties.cluster_id, (err, zoom) => {
@@ -155,36 +171,23 @@ map.on('load', () => {
         });
     });
 
+    // 🗺️ マップ空欄タップで「折りたたむ（peek）」※完全には閉じない
     map.on('click', (e) => {
         const features = map.queryRenderedFeatures(e.point, { layers: ['unclustered-point', 'unclustered-icon', 'clusters'] });
         if (!features.length) {
-            document.getElementById('memoBottomSheet').classList.remove('show');
+            const sheet = document.getElementById('memoBottomSheet');
+            if (sheet.classList.contains('show')) sheet.classList.add('peek');
+
             document.getElementById('memoActionPanel').classList.remove('show');
             document.getElementById('filterBottomSheet').classList.remove('show');
             if (tempPinMarker) tempPinMarker.remove(); 
         }
     });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // 🗺️ 地図をドラッグ移動し始めたらメモ詳細を引っ込める神UX
+    // 🗺️ 地図をドラッグ移動し始めたら「折りたたむ（peek）」
     map.on('dragstart', () => {
-        document.getElementById('memoBottomSheet').classList.remove('show');
+        const sheet = document.getElementById('memoBottomSheet');
+        if (sheet.classList.contains('show')) sheet.classList.add('peek');
     });
 
     // 👆 長押し（ロングタップ）で極細仮ピン表示＆完全余白中央寄せ
@@ -358,14 +361,12 @@ document.getElementById('btnCloseFilter').addEventListener('click', () => { docu
 document.getElementById('chkShowMineOnly').addEventListener('change', () => { filterState.showMineOnly = document.getElementById('chkShowMineOnly').checked; applyFilters(); });
 filterContainer.addEventListener('change', () => { filterState.categories = Array.from(filterContainer.querySelectorAll('input:checked')).map(cb => cb.value); applyFilters(); });
 
-// 📍 🆕 極細仮ピンを、検索バーとカードの「見える隙間」のド真ん中に持ってくる処理
-
-
+// 📍 極細仮ピンを、検索バーとカードの「見える隙間」のド真ん中に持ってくる処理
 function openMemoAddSheet(lngLat) {
     targetLngLat = lngLat; 
     if (tempPinMarker) tempPinMarker.remove();
     
-    // 💡【修正】地図用とアニメ用のタグを分ける
+    // 💡 地図用とアニメ用のタグを分ける
     const wrapper = document.createElement('div'); // 地図に渡す用の「外箱」
     const pin = document.createElement('div');     // デザインとアニメーション用の「中身」
     pin.className = 'sharp-temp-pin';
@@ -385,11 +386,6 @@ function openMemoAddSheet(lngLat) {
     document.getElementById('filterBottomSheet').classList.remove('show');
     document.getElementById('memoActionPanel').classList.add('show');
 }
-
-
-
-
-
 
 const closeMemoForm = () => { 
     document.getElementById('memoActionPanel').classList.remove('show'); 
@@ -433,9 +429,6 @@ async function loadMemosToMap() {
     applyFilters();
 }
 
-
-
-
 function applyFilters() {
     if (!map.getSource('memos')) return;
     const features = [];
@@ -443,18 +436,20 @@ function applyFilters() {
         if (filterState.showMineOnly && data.senderId !== currentUserId) return;
         if (!filterState.categories.includes(data.category)) return;
         
-        // 🆕 カテゴリーごとに表示するマテリアルアイコンのIDを決定
         let iconId = 'icon-info';
         if (data.category === '🏢 建物・入口') iconId = 'icon-building';
         else if (data.category === '🅿️ 駐輪スポット') iconId = 'icon-parking';
         else if (data.category === '⚠️ 注意・取締り') iconId = 'icon-warning';
         else if (data.category === '🚻 トイレ・公園') iconId = 'icon-restroom';
 
+        // 現在選択されて開いているメモかどうかを判定
+        const isSelected = data.id === currentOpenMemoId;
+
         features.push({
             type: 'Feature', geometry: { type: 'Point', coordinates: [data.lng, data.lat] },
             properties: { 
                 id: data.id, 
-                iconName: iconId, // 🌟 絵文字ではなくアイコンIDをマップに渡す
+                iconName: iconId, 
                 category: data.category, 
                 text: data.text || "", 
                 imageUrl: data.imageUrl || "", 
@@ -463,29 +458,21 @@ function applyFilters() {
                 likesCount: data.likesCount || 0, 
                 createdAt: data.createdAt || 0, 
                 lng: data.lng, 
-                lat: data.lat 
+                lat: data.lat,
+                isSelected: isSelected // 地図システムに選択中フラグを渡す
             }
         });
     });
     map.getSource('memos').setData({ type: 'FeatureCollection', features: features });
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 // 📖 メモ詳細ボトムシート (時間正確表示バグ修正版)
 function openMemoBottomSheet(props) {
     currentOpenMemoId = props.id;
+    
+    // メモを開いた瞬間に、選択中フラグを反映させるためフィルターを再適用
+    applyFilters(); 
+    
     document.getElementById('sheetCategory').textContent = props.category;
     document.getElementById('sheetText').textContent = props.text;
     
@@ -497,17 +484,17 @@ function openMemoBottomSheet(props) {
     document.getElementById('sheetTime').textContent = timeStr;
     
     const imgContainer = document.getElementById('sheetImageContainer');
-    let bottomPadding = 300; // 🌟 画像「なし」の時の基本シート高（ピンを避ける余白）
+    let bottomPadding = 300; 
 
     if(props.imageUrl) { 
-        imgContainer.style.display = 'flex'; // 先ほど追加したCSSに合わせて flex にします
+        imgContainer.style.display = 'flex'; 
         document.getElementById('sheetImage').src = props.imageUrl; 
         document.getElementById('sheetImage').onclick = () => openImageViewer(props.imageUrl); 
-        bottomPadding = 520; // 🌟 画像「あり」の時はシートが高くなるので余白を増やす
+        bottomPadding = 520; 
     } 
     else { 
         imgContainer.style.display = 'none'; 
-        document.getElementById('sheetImage').src = ""; // 前のメモの画像をクリア
+        document.getElementById('sheetImage').src = ""; 
     }
     
     document.getElementById('sheetAuthorName').textContent = props.senderName;
@@ -516,7 +503,6 @@ function openMemoBottomSheet(props) {
 
     document.getElementById('sheetAuthorContainer').onclick = () => { if (props.senderName !== "匿名ドライバー") openProfileModal(props.senderId, props.senderName); };
     
-    // 📍 🌟 画像の有無を考慮した「完璧な隙間の中央」へジャンプ
     map.easeTo({
         center: [props.lng, props.lat],
         padding: { top: 90, bottom: bottomPadding, left: 0, right: 0 },
@@ -525,14 +511,12 @@ function openMemoBottomSheet(props) {
 
     document.getElementById('memoActionPanel').classList.remove('show');
     document.getElementById('filterBottomSheet').classList.remove('show');
-    document.getElementById('memoBottomSheet').classList.add('show');
+    
+    // 🌟 必ず折りたたみ状態を解除してからフル展開で表示する
+    const sheet = document.getElementById('memoBottomSheet');
+    sheet.classList.remove('peek'); 
+    sheet.classList.add('show');
 }
-
-
-
-
-
-
 
 document.getElementById('btnLikeMemo').addEventListener('click', async () => {
     if(!currentOpenMemoId) return;
@@ -638,3 +622,54 @@ document.getElementById('btnLoadMoreBbs').addEventListener('click', () => loadBb
 window.openImageViewer = (url) => { document.getElementById('fullSizeImage').src = url; document.getElementById('imageViewerOverlay').style.display = 'block'; document.getElementById('imageViewerModal').style.display = 'block'; };
 const closeViewer = () => { document.getElementById('imageViewerOverlay').style.display = 'none'; document.getElementById('imageViewerModal').style.display = 'none'; };
 document.getElementById('closeImageViewerBtn').addEventListener('click', closeViewer); document.getElementById('imageViewerOverlay').addEventListener('click', closeViewer);
+
+// ==========================================
+// 📱 シートのスワイプ操作＆✕ボタン (Google Maps風UX)
+// ==========================================
+const memoSheet = document.getElementById('memoBottomSheet');
+let touchStartY = 0;
+
+// 👆 スワイプ開始位置を記録
+memoSheet.addEventListener('touchstart', (e) => {
+    touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+// 👆 スワイプ終了時の判定
+memoSheet.addEventListener('touchend', (e) => {
+    const touchEndY = e.changedTouches[0].clientY;
+    const diff = touchEndY - touchStartY;
+
+    // 下に50px以上スワイプ ➔ 折りたたみ
+    if (diff > 50 && memoSheet.classList.contains('show') && !memoSheet.classList.contains('peek')) {
+        // ※シートの中のテキストを上にスクロールして読んでいる最中は、誤爆で閉じないようにする
+        if (memoSheet.scrollTop === 0) {
+            memoSheet.classList.add('peek');
+        }
+    } 
+    // 上に50px以上スワイプ ➔ フル展開に戻す
+    else if (diff < -50 && memoSheet.classList.contains('peek')) {
+        memoSheet.classList.remove('peek');
+    }
+});
+
+// 👆 折りたたみ状態の時にシートのどこかをタップしたらフル展開
+memoSheet.addEventListener('click', (e) => {
+    // ✕ボタンを押した時は発火させない
+    if (e.target.id !== 'btnCloseMemoSheet' && memoSheet.classList.contains('peek')) {
+        memoSheet.classList.remove('peek');
+    }
+});
+
+// ❌ ✕ボタンを押した時だけ、完全に閉じてピンの選択も解除する！
+const btnCloseSheet = document.getElementById('btnCloseMemoSheet');
+if (btnCloseSheet) {
+    btnCloseSheet.addEventListener('click', (e) => {
+        e.stopPropagation(); // シート自体のタップ判定をブロック
+        memoSheet.classList.remove('show');
+        memoSheet.classList.remove('peek');
+        
+        // ピンの選択状態をクリアして、色を通常（白）に戻す
+        currentOpenMemoId = null;
+        applyFilters();
+    });
+}
