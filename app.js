@@ -67,6 +67,11 @@ const map = new maplibregl.Map({
     center: [139.8731, 35.6635], zoom: 14, attributionControl: false 
 });
 
+
+
+
+
+
 map.on('load', () => {
     // 📍 起動時に自動で現在地を取得してジャンプ
     navigator.geolocation.getCurrentPosition(pos => {
@@ -78,13 +83,71 @@ map.on('load', () => {
     });
 
     map.addSource('memos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
+
+    // 1️⃣ マテリアルアイコンをマップに追加（SVG埋め込み）
+    const catIcons = {
+        'icon-building': '<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="%23FFFFFF"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>',
+        'icon-parking': '<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="%23FFFFFF"><path d="M13.2 11H10v2h3.2c1.1 0 2-.9 2-2s-.9-2-2-2zM8 4h5.2c2.21 0 4 1.79 4 4s-1.79 4-4 4H10v8H8V4z"/></svg>',
+        'icon-warning': '<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="%23FFFFFF"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>',
+        'icon-restroom': '<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="%23FFFFFF"><path d="M20.5 6c-2.61.7-5.67 1-8.5 1s-5.89-.3-8.5-1L3 8c1.86.5 4 .83 6 1v13h2v-6h2v6h2V9c2-.17 4.14-.5 6-1l-.5-2zM12 6c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>',
+        'icon-info': '<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="%23FFFFFF"><path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/></svg>'
+    };
+    Object.keys(catIcons).forEach(key => {
+        const img = new Image(); img.onload = () => map.addImage(key, img);
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(catIcons[key]);
+    });
+
+    // 2️⃣ クラスター（複数まとまった時の緑の丸）
     map.addLayer({ id: 'clusters', type: 'circle', source: 'memos', filter: ['has', 'point_count'], paint: { 'circle-color': '#06C167', 'circle-radius': 18, 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
     map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'memos', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 14, 'text-font': ['Noto Sans Bold'] }, paint: { 'text-color': '#ffffff' } });
-    map.addLayer({ id: 'unclustered-point', type: 'circle', source: 'memos', filter: ['!', ['has', 'point_count']], paint: { 'circle-color': '#FFFFFF', 'circle-radius': 16, 'circle-stroke-width': 2, 'circle-stroke-color': '#06C167' } });
-    map.addLayer({ id: 'unclustered-emoji', type: 'symbol', source: 'memos', filter: ['!', ['has', 'point_count']], layout: { 'text-field': ['get', 'emoji'], 'text-size': 18, 'text-anchor': 'center' } });
+    
+    // 3️⃣ 枠の色をカテゴリーごとに塗り分ける
+    map.addLayer({ 
+        id: 'unclustered-point', 
+        type: 'circle', 
+        source: 'memos', 
+        filter: ['!', ['has', 'point_count']], 
+        paint: { 
+            'circle-color': '#FFFFFF', 
+            'circle-radius': 16, 
+            'circle-stroke-width': 3, 
+            'circle-stroke-color': [
+                'match', ['get', 'category'],
+                '🏢 建物・入口', '#1A73E8',
+                '🅿️ 駐輪スポット', '#34A853',
+                '⚠️ 注意・取締り', '#EA4335',
+                '🚻 トイレ・公園', '#FBBC04',
+                '#9AA0A6'
+            ]
+        } 
+    });
 
+    // 4️⃣ アイコンをピンの真ん中に表示
+    map.addLayer({ 
+        id: 'unclustered-icon', 
+        type: 'symbol', 
+        source: 'memos', 
+        filter: ['!', ['has', 'point_count']], 
+        layout: { 
+            'icon-image': ['get', 'iconName'], 
+            'icon-size': 0.7, 
+            'icon-allow-overlap': true 
+        },
+        paint: {
+            'icon-color': [ // マテリアルアイコン自体の色を、ピンの枠色に合わせて変える
+                'match', ['get', 'category'],
+                '🏢 建物・入口', '#1A73E8',
+                '🅿️ 駐輪スポット', '#34A853',
+                '⚠️ 注意・取締り', '#EA4335',
+                '🚻 トイレ・公園', '#FBBC04',
+                '#9AA0A6'
+            ]
+        }
+    });
+
+    // ▼ イベント
     map.on('click', 'unclustered-point', (e) => openMemoBottomSheet(e.features[0].properties));
-    map.on('click', 'unclustered-emoji', (e) => openMemoBottomSheet(e.features[0].properties));
+    map.on('click', 'unclustered-icon', (e) => openMemoBottomSheet(e.features[0].properties));
     map.on('click', 'clusters', (e) => {
         const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
         map.getSource('memos').getClusterExpansionZoom(features[0].properties.cluster_id, (err, zoom) => {
@@ -92,9 +155,8 @@ map.on('load', () => {
         });
     });
 
-    // マップ空欄タップでシートを閉じる
     map.on('click', (e) => {
-        const features = map.queryRenderedFeatures(e.point, { layers: ['unclustered-point', 'unclustered-emoji', 'clusters'] });
+        const features = map.queryRenderedFeatures(e.point, { layers: ['unclustered-point', 'unclustered-icon', 'clusters'] });
         if (!features.length) {
             document.getElementById('memoBottomSheet').classList.remove('show');
             document.getElementById('memoActionPanel').classList.remove('show');
@@ -102,6 +164,23 @@ map.on('load', () => {
             if (tempPinMarker) tempPinMarker.remove(); 
         }
     });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // 🗺️ 地図をドラッグ移動し始めたらメモ詳細を引っ込める神UX
     map.on('dragstart', () => {
@@ -354,17 +433,38 @@ async function loadMemosToMap() {
     applyFilters();
 }
 
+
+
+
 function applyFilters() {
     if (!map.getSource('memos')) return;
     const features = [];
     allMemosData.forEach(data => {
         if (filterState.showMineOnly && data.senderId !== currentUserId) return;
         if (!filterState.categories.includes(data.category)) return;
-        const emoji = data.category ? data.category.substring(0, 2) : "📝"; 
+        
+        // 🆕 カテゴリーごとに表示するマテリアルアイコンのIDを決定
+        let iconId = 'icon-info';
+        if (data.category === '🏢 建物・入口') iconId = 'icon-building';
+        else if (data.category === '🅿️ 駐輪スポット') iconId = 'icon-parking';
+        else if (data.category === '⚠️ 注意・取締り') iconId = 'icon-warning';
+        else if (data.category === '🚻 トイレ・公園') iconId = 'icon-restroom';
+
         features.push({
             type: 'Feature', geometry: { type: 'Point', coordinates: [data.lng, data.lat] },
-            /* ⬇️ 🌟 propertiesの中に「lng: data.lng, lat: data.lat」を追加して、タップ時に座標を渡せるように修正しました！ */
-            properties: { id: data.id, emoji: emoji, category: data.category, text: data.text || "", imageUrl: data.imageUrl || "", senderId: data.senderId, senderName: data.senderName || "匿名", likesCount: data.likesCount || 0, createdAt: data.createdAt || 0, lng: data.lng, lat: data.lat }
+            properties: { 
+                id: data.id, 
+                iconName: iconId, // 🌟 絵文字ではなくアイコンIDをマップに渡す
+                category: data.category, 
+                text: data.text || "", 
+                imageUrl: data.imageUrl || "", 
+                senderId: data.senderId, 
+                senderName: data.senderName || "匿名", 
+                likesCount: data.likesCount || 0, 
+                createdAt: data.createdAt || 0, 
+                lng: data.lng, 
+                lat: data.lat 
+            }
         });
     });
     map.getSource('memos').setData({ type: 'FeatureCollection', features: features });
