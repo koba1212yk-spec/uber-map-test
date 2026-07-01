@@ -280,13 +280,21 @@ document.getElementById('chkShowMineOnly').addEventListener('change', () => { fi
 filterContainer.addEventListener('change', () => { filterState.categories = Array.from(filterContainer.querySelectorAll('input:checked')).map(cb => cb.value); applyFilters(); });
 
 // 📍 🆕 極細仮ピンを、検索バーとカードの「見える隙間」のド真ん中に持ってくる処理
+
 function openMemoAddSheet(lngLat) {
     targetLngLat = lngLat; 
     if (tempPinMarker) tempPinMarker.remove();
-    const el = document.createElement('div'); el.className = 'sharp-temp-pin';
-    tempPinMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat(lngLat).addTo(map);
+    
+    // 💡【修正】地図用とアニメ用のタグを分ける
+    const wrapper = document.createElement('div'); // 地図に渡す用の「外箱」
+    const pin = document.createElement('div');     // デザインとアニメーション用の「中身」
+    pin.className = 'sharp-temp-pin';
+    wrapper.appendChild(pin);
+    
+    // 🗺️ マップには「外箱（wrapper）」を渡す
+    tempPinMarker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat(lngLat).addTo(map);
 
-    // 🗺️ 上の検索バー分(90px)と、下から出るカード分(340px)のpaddingをシステムに認識させ、隙間のド真ん中へ誘導する
+    // 🗺️ 上の検索バー分(90px)と、下から出るカード分(450px)のpaddingをシステムに認識させ、隙間のド真ん中へ誘導する
     map.easeTo({
         center: lngLat,
         padding: { top: 90, bottom: 450, left: 0, right: 0 },
@@ -297,6 +305,14 @@ function openMemoAddSheet(lngLat) {
     document.getElementById('filterBottomSheet').classList.remove('show');
     document.getElementById('memoActionPanel').classList.add('show');
 }
+
+
+
+
+
+
+
+
 const closeMemoForm = () => { 
     document.getElementById('memoActionPanel').classList.remove('show'); 
     document.getElementById('btnRemoveImage').click(); document.getElementById('memoTextInput').value = ""; 
