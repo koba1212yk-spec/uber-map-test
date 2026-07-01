@@ -7,7 +7,6 @@
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
-
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#F8F9FA">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,7 +37,7 @@
             <div class="ticker-left" id="tickerClickArea">
                 <div class="ticker-content" id="tickerContent">
                     <div class="ticker-face ticker-front" id="tickerFront">📌 最新のマップメモ</div>
-                    <div class="ticker-face ticker-back" id="tickerBack">読み込み中...</div>
+                    <div class="ticker-face ticker-back" id="tickerBack">最新の情報を取得中...</div>
                 </div>
             </div>
             <div class="ticker-right">
@@ -80,14 +79,16 @@
 
         <div id="filterBottomSheet" class="bottom-sheet">
             <div class="drag-handle"></div>
-            <h3 style="margin-top:0;">表示フィルター</h3>
+            <h3 style="margin-top:0; display:flex; justify-content:space-between; align-items:center;">
+                表示フィルター
+                <button id="btnCloseFilter" style="background:none; border:none; font-size:0.9em; color:#1A73E8; font-weight:bold; cursor:pointer;">閉じる</button>
+            </h3>
             <label class="toggle-name-label" style="font-size: 1em; padding: 10px 0; border-bottom: 1px solid #E8EAED; margin-bottom: 15px;">
                 <input type="checkbox" id="chkShowMineOnly">
                 <span style="color:#1A73E8; font-weight:bold;">自分のメモだけを表示</span>
             </label>
             <p style="font-size: 0.9em; font-weight:bold; color:#5F6368; margin-bottom: 8px;">カテゴリ絞り込み</p>
             <div class="category-selector" id="filterCategoryContainer"></div>
-            <button id="btnCloseFilter" class="btn-main-blue" style="width:100%; margin-top:20px;">適用して閉じる</button>
         </div>
 
         <div id="memoBottomSheet" class="bottom-sheet">
@@ -125,6 +126,7 @@
 
     <div id="profilePage" class="page-section profile-page-container" style="display: none;">
         <h2 class="profile-page-title">アカウント設定</h2>
+        
         <div id="profileReadMode">
             <div class="profile-card">
                 <div class="profile-avatar-large">👤</div>
@@ -138,7 +140,11 @@
         </div>
 
         <div id="profileEditMode" style="display: none;">
-            <div class="input-group"><label>公開する名前</label><input type="text" id="profileName" placeholder="例: こば"></div>
+            <div class="input-group">
+                <label>公開する名前</label>
+                <p id="nameChangeWarning" style="color: #D93025; font-size: 0.8em; margin: 0 0 6px 0; font-weight: bold;">⚠️ 名前の変更は1回のみです。保存後は変更できません。</p>
+                <input type="text" id="profileName" placeholder="例: こば">
+            </div>
             <div class="input-group"><label>メイン稼働エリア</label><input type="text" id="profileArea" placeholder="例: 葛西駅周辺"></div>
             <div class="input-group"><label>メイン稼働時間</label><input type="text" id="profileTime" placeholder="例: 夜18時〜24時"></div>
             <div class="input-group"><label>車両タイプ</label><div class="checkbox-group"><label><input type="checkbox" name="vehicleTag" value="🚲 自転車"> 自転車</label><label><input type="checkbox" name="vehicleTag" value="🛵 125cc以下"> 125cc以下</label><label><input type="checkbox" name="vehicleTag" value="🏍️ 126cc以上"> 126cc以上</label><label><input type="checkbox" name="vehicleTag" value="🚗 軽貨物"> 軽貨物</label></div></div>
@@ -146,16 +152,19 @@
             <button id="saveProfileBtn" class="btn-main-blue" style="width: 100%; margin-bottom: 10px;">保存する</button>
             <button id="cancelEditBtn" class="btn-text-gray" style="width: 100%;">キャンセル</button>
         </div>
+
         <hr class="menu-divider">
         <h2 class="profile-page-title">フィードバック</h2>
         <textarea id="opinionInput" placeholder="バグ報告や欲しい機能など..." class="feedback-textarea"></textarea>
         <button id="submitOpinionBtn" class="btn-outline-blue">送信する</button>
+
         <div class="copyright-notice">
             <p><strong>© 2026 DeliMap. All Rights Reserved.</strong></p>
             <p>当アプリのデザイン、レイアウト、および独自機能の無断転載・複製を固く禁じます。</p>
             <p class="attribution"><a href="https://www.maptiler.com/copyright/" target="_blank">© MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap contributors</a></p>
         </div>
-        <div style="height: 100px;"></div> </div>
+        <div style="height: 100px;"></div>
+    </div>
 
     <nav class="bottom-nav">
         <button id="tabMap" class="nav-tab active">
@@ -185,6 +194,7 @@
             </div>
         </div>
     </div>
+
     <div id="profileModalOverlay" class="modal-overlay"></div>
     <div id="profileModal" class="profile-modal">
         <button id="closeModalBtn" class="close-modal-btn">×</button>
@@ -197,6 +207,7 @@
             <div id="modalTags" class="tags-container" style="margin-top: 10px;"></div>
         </div>
     </div>
+
     <div id="imageViewerOverlay" class="modal-overlay" style="z-index: 4000;"></div>
     <div id="imageViewerModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index: 4001; max-width:95vw; max-height:95vh;">
         <button id="closeImageViewerBtn" style="position:absolute; top:-40px; right:0; background:none; border:none; color:#fff; font-size:2.5em; cursor:pointer;">×</button>

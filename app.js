@@ -18,29 +18,43 @@ const storage = getStorage(app);
 const auth = getAuth(app);
 
 let currentUserId = "anonymous";
-let myProfileName = "名無し配達員";
+let myProfileName = "";
+let isNameLocked = false; 
 let selectedImageDataUrl = null;
 let bbsSelectedImageDataUrl = null;
 let lastBbsDoc = null; 
 let currentLocationMarker = null;
-let tempPinMarker = null; // 仮ピン用
+let tempPinMarker = null; 
 let currentOpenMemoId = null;
 let targetLngLat = null; 
 
 let filterState = { showMineOnly: false, categories: ['🏢 建物・入口', '🅿️ 駐輪スポット', '⚠️ 注意・取締り', '🚻 トイレ・公園', '💡 その他'] };
 let allMemosData = []; 
 
-// 🆕 ティッカー用変数
 let latestMemos = [];
 let tickerIndex = 0;
 let isTickerFlipped = false;
 
+// 📱 LocalStorageから直前に開いていたタブを復元 (リロード対策)
+const savedTab = localStorage.getItem('deliMapActiveTab') || 'tabMap';
+
+// 📛 🆕 読み込み中フリーズ対策：起動した瞬間、0.1秒でローカル生成した初期名前を表示する
+let localName = localStorage.getItem('deliMapTempName');
+if (!localName) {
+    const seedId = Math.floor(1000 + Math.random() * 9000); // 被らない短い4桁
+    localName = `名無し配達員(${seedId})`;
+    localStorage.setItem('deliMapTempName', localName);
+}
+myProfileName = localName;
+document.getElementById('readName').textContent = myProfileName;
+document.getElementById('profileName').value = myProfileName;
+
 // ==========================================
-// 🚀 起動処理 (Firebase)
+// 🚀 起動処理 (Firebase匿名認証)
 // ==========================================
 signInAnonymously(auth).then((userCredential) => {
     currentUserId = userCredential.user.uid;
-    loadProfile();
+    loadProfile(); // 裏でFirestoreと同期・確認を行う
 }).catch(e => console.error(e));
 
 // ==========================================
@@ -54,6 +68,15 @@ const map = new maplibregl.Map({
 });
 
 map.on('load', () => {
+    // 📍 起動時に自動で現在地を取得してジャンプ
+    navigator.geolocation.getCurrentPosition(pos => {
+        const coords = [pos.coords.longitude, pos.coords.latitude];
+        map.flyTo({ center: coords, zoom: 16 });
+        if (currentLocationMarker) currentLocationMarker.remove();
+        const el = document.createElement('div'); el.className = 'current-location-dot';
+        currentLocationMarker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
+    });
+
     map.addSource('memos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
     map.addLayer({ id: 'clusters', type: 'circle', source: 'memos', filter: ['has', 'point_count'], paint: { 'circle-color': '#06C167', 'circle-radius': 18, 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
     map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'memos', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 14, 'text-font': ['Noto Sans Bold'] }, paint: { 'text-color': '#ffffff' } });
@@ -69,17 +92,23 @@ map.on('load', () => {
         });
     });
 
+    // マップ空欄タップでシートを閉じる
     map.on('click', (e) => {
         const features = map.queryRenderedFeatures(e.point, { layers: ['unclustered-point', 'unclustered-emoji', 'clusters'] });
         if (!features.length) {
             document.getElementById('memoBottomSheet').classList.remove('show');
             document.getElementById('memoActionPanel').classList.remove('show');
             document.getElementById('filterBottomSheet').classList.remove('show');
-            if (tempPinMarker) tempPinMarker.remove(); // 余白タップで仮ピン消去
+            if (tempPinMarker) tempPinMarker.remove(); 
         }
     });
 
-    // 👆 長押しで赤い仮ピン＆入力シート展開
+    // 🗺️ 地図をドラッグ移動し始めたらメモ詳細を引っ込める神UX
+    map.on('dragstart', () => {
+        document.getElementById('memoBottomSheet').classList.remove('show');
+    });
+
+    // 👆 長押し（ロングタップ）で極細仮ピン表示＆完全余白中央寄せ
     let touchTimer;
     map.on('touchstart', (e) => {
         if (e.originalEvent.touches.length > 1) return;
@@ -90,6 +119,9 @@ map.on('load', () => {
     map.on('contextmenu', (e) => { openMemoAddSheet(e.lngLat); });
 
     loadMemosToMap();
+
+    // 記憶したタブを展開
+    document.getElementById(savedTab).click();
 });
 
 // 🔍 検索
@@ -105,7 +137,7 @@ const execSearch = async () => {
 };
 searchInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') execSearch(); });
 
-// 📍 現在地取得
+// 🎯 現在地ボタン
 document.getElementById('geoBackBtn').addEventListener('click', () => {
     navigator.geolocation.getCurrentPosition(pos => {
         const coords = [pos.coords.longitude, pos.coords.latitude];
@@ -116,7 +148,7 @@ document.getElementById('geoBackBtn').addEventListener('click', () => {
     });
 });
 
-// 📱 ボトムナビゲーション
+// 📱 タブ切り替え (状態を記憶)
 const tabs = { 'tabMap': 'mapPage', 'tabBbs': 'bbsPage', 'tabProfile': 'profilePage' };
 Object.keys(tabs).forEach(tabId => {
     document.getElementById(tabId).addEventListener('click', () => {
@@ -124,13 +156,16 @@ Object.keys(tabs).forEach(tabId => {
         document.getElementById(tabId).classList.add('active');
         document.querySelectorAll('.page-section').forEach(p => p.style.display = 'none');
         document.getElementById(tabs[tabId]).style.display = 'block';
+        
+        localStorage.setItem('deliMapActiveTab', tabId); // 現在の画面を保存
+
         if(tabId === 'tabMap') map.resize();
         if(tabId === 'tabBbs' && lastBbsDoc === null) loadBbsTimeline(false);
     });
 });
 
 // ==========================================
-// 🆕 3D回転ティッカー (エリア注目情報)
+// 📻 3D回転ティッカー (最新3件巡回ループ)
 // ==========================================
 setInterval(() => {
     if (latestMemos.length === 0) return;
@@ -138,40 +173,43 @@ setInterval(() => {
     const backFace = document.getElementById('tickerBack');
     
     if (isTickerFlipped) {
-        // 表面(タイトル)に戻る
         content.classList.remove('flipped');
-        tickerIndex = (tickerIndex + 1) % latestMemos.length; // 次のメモを準備
+        tickerIndex = (tickerIndex + 1) % latestMemos.length; 
     } else {
-        // 裏面(メモ内容)にフリップする
         const memo = latestMemos[tickerIndex];
         const emoji = memo.category ? memo.category.substring(0, 2) : "📝";
         backFace.textContent = `${emoji} ${memo.text || memo.category}`;
         content.classList.add('flipped');
     }
     isTickerFlipped = !isTickerFlipped;
-}, 3500); // 3.5秒ごとに回転
+}, 3500);
 
-// ティッカータップで瞬間ジャンプ
 document.getElementById('tickerClickArea').addEventListener('click', () => {
     if (latestMemos.length === 0) return;
-    // フリップ中(裏面)なら現在のメモ、表面なら直前に表示していたメモへ
     const targetMemo = isTickerFlipped ? latestMemos[tickerIndex] : latestMemos[(tickerIndex === 0 ? latestMemos.length - 1 : tickerIndex - 1)];
-    
     map.flyTo({ center: [targetMemo.lng, targetMemo.lat], zoom: 16 });
     openMemoBottomSheet(targetMemo);
 });
 
 // ==========================================
-// ⚙️ プロフィール設定
+// ⚙️ プロフィール設定 (1回限定ロックロジック)
 // ==========================================
 async function loadProfile() {
     try {
         const snap = await getDoc(doc(db, "profiles", currentUserId));
         if (snap.exists()) {
             const pData = snap.data();
-            myProfileName = pData.displayName || "名無し配達員";
+            myProfileName = pData.displayName || myProfileName;
+            isNameLocked = pData.nameChanged || false;
+
             document.getElementById('readName').textContent = myProfileName;
-            document.getElementById('profileName').value = myProfileName !== "名無し配達員" ? myProfileName : "";
+            document.getElementById('profileName').value = myProfileName;
+            
+            if (isNameLocked) {
+                document.getElementById('nameChangeWarning').style.display = 'none';
+                document.getElementById('profileName').disabled = true;
+            }
+            
             document.getElementById('readArea').textContent = pData.mainArea || "未設定"; document.getElementById('readTime').textContent = pData.mainTime || "未設定";
             document.getElementById('readTotalLikes').textContent = pData.totalLikes || 0;
             const tagsContainer = document.getElementById('readTags'); tagsContainer.innerHTML = ""; 
@@ -180,17 +218,28 @@ async function loadProfile() {
             else allTags.forEach(tag => { const span = document.createElement('span'); span.className = 'tag'; span.textContent = tag; tagsContainer.appendChild(span); });
             document.getElementById('profileArea').value = pData.mainArea || ""; document.getElementById('profileTime').value = pData.mainTime || "";
             document.querySelectorAll('input[name="vehicleTag"]').forEach(cb => cb.checked = pData.vehicles?.includes(cb.value)); document.querySelectorAll('input[name="serviceTag"]').forEach(cb => cb.checked = pData.services?.includes(cb.value));
+        } else {
+            // Firestoreにまだレコードがなければ、即時生成したローカルの初期名で登録を同期
+            await setDoc(doc(db, "profiles", currentUserId), { displayName: myProfileName, nameChanged: false }, { merge: true });
         }
     } catch (e) {}
 }
+
 document.getElementById('editProfileBtn').addEventListener('click', () => { document.getElementById('profileReadMode').style.display = 'none'; document.getElementById('profileEditMode').style.display = 'block'; });
 document.getElementById('cancelEditBtn').addEventListener('click', () => { document.getElementById('profileEditMode').style.display = 'none'; document.getElementById('profileReadMode').style.display = 'block'; });
 document.getElementById('saveProfileBtn').addEventListener('click', async () => {
-    const name = document.getElementById('profileName').value.trim() || "名無し配達員";
+    let finalName = document.getElementById('profileName').value.trim() || myProfileName;
     const area = document.getElementById('profileArea').value.trim(); const time = document.getElementById('profileTime').value.trim();
     const vehicles = Array.from(document.querySelectorAll('input[name="vehicleTag"]:checked')).map(el => el.value); const services = Array.from(document.querySelectorAll('input[name="serviceTag"]:checked')).map(el => el.value);
+    
+    let lockFlag = isNameLocked;
+    if (!isNameLocked && finalName !== myProfileName) {
+        lockFlag = true; // 初めて名前を変更したら永続ロック
+    }
+
     try { 
-        await setDoc(doc(db, "profiles", currentUserId), { displayName: name, mainArea: area, mainTime: time, vehicles: vehicles, services: services, updatedAt: new Date() }, { merge: true }); 
+        await setDoc(doc(db, "profiles", currentUserId), { displayName: finalName, mainArea: area, mainTime: time, vehicles: vehicles, services: services, nameChanged: lockFlag, updatedAt: new Date() }, { merge: true }); 
+        localStorage.setItem('deliMapTempName', finalName); // ローカル記憶も同期
         await loadProfile(); document.getElementById('profileEditMode').style.display = 'none'; document.getElementById('profileReadMode').style.display = 'block'; 
     } catch (error) {}
 });
@@ -200,7 +249,7 @@ document.getElementById('submitOpinionBtn').addEventListener('click', async () =
 });
 
 // ==========================================
-// 📝 攻略メモ (長押し仮ピン＆フィルター)
+// 📝 攻略メモ (フィルター即時連動 ＆ padding中央パン)
 // ==========================================
 function compressImage(file, maxWidth = 800) {
     return new Promise((resolve) => {
@@ -214,28 +263,35 @@ function compressImage(file, maxWidth = 800) {
     });
 }
 
-// フィルター初期化
+// 👁️ 🆕 フィルター即時反映システム (ボタンを撤廃し、changeイベントを即監視)
 const filterCats = ['🏢 建物・入口', '🅿️ 駐輪スポット', '⚠️ 注意・取締り', '🚻 トイレ・公園', '💡 その他'];
 const filterContainer = document.getElementById('filterCategoryContainer');
 filterCats.forEach(cat => { filterContainer.innerHTML += `<label class="cat-chip"><input type="checkbox" value="${cat}" checked><span>${cat.substring(0, 2)} ${cat.substring(3)}</span></label>`; });
+
 document.getElementById('btnFilterMemo').addEventListener('click', () => {
     document.getElementById('memoBottomSheet').classList.remove('show');
     document.getElementById('memoActionPanel').classList.remove('show');
     document.getElementById('filterBottomSheet').classList.add('show');
 });
-document.getElementById('btnCloseFilter').addEventListener('click', () => {
-    document.getElementById('filterBottomSheet').classList.remove('show');
-    filterState.showMineOnly = document.getElementById('chkShowMineOnly').checked;
-    filterState.categories = Array.from(filterContainer.querySelectorAll('input:checked')).map(cb => cb.value);
-    applyFilters();
-});
+document.getElementById('btnCloseFilter').addEventListener('click', () => { document.getElementById('filterBottomSheet').classList.remove('show'); });
 
-// 長押しで「赤い仮ピン」と入力シート
+// リスナー登録（触った瞬間に地図のピンがシュパッと切り替わる）
+document.getElementById('chkShowMineOnly').addEventListener('change', () => { filterState.showMineOnly = document.getElementById('chkShowMineOnly').checked; applyFilters(); });
+filterContainer.addEventListener('change', () => { filterState.categories = Array.from(filterContainer.querySelectorAll('input:checked')).map(cb => cb.value); applyFilters(); });
+
+// 📍 🆕 極細仮ピンを、検索バーとカードの「見える隙間」のド真ん中に持ってくる処理
 function openMemoAddSheet(lngLat) {
     targetLngLat = lngLat; 
     if (tempPinMarker) tempPinMarker.remove();
-    const el = document.createElement('div'); el.className = 'temp-pin';
+    const el = document.createElement('div'); el.className = 'sharp-temp-pin';
     tempPinMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat(lngLat).addTo(map);
+
+    // 🗺️ 上の検索バー分(90px)と、下から出るカード分(340px)のpaddingをシステムに認識させ、隙間のド真ん中へ誘導する
+    map.easeTo({
+        center: lngLat,
+        padding: { top: 90, bottom: 450, left: 0, right: 0 },
+        duration: 350
+    });
 
     document.getElementById('memoBottomSheet').classList.remove('show');
     document.getElementById('filterBottomSheet').classList.remove('show');
@@ -244,7 +300,7 @@ function openMemoAddSheet(lngLat) {
 const closeMemoForm = () => { 
     document.getElementById('memoActionPanel').classList.remove('show'); 
     document.getElementById('btnRemoveImage').click(); document.getElementById('memoTextInput').value = ""; 
-    if (tempPinMarker) tempPinMarker.remove(); // キャンセルで仮ピン消去
+    if (tempPinMarker) tempPinMarker.remove(); 
 };
 document.getElementById('btnCancelForm').addEventListener('click', closeMemoForm);
 
@@ -256,7 +312,6 @@ document.getElementById('memoCameraInput').addEventListener('change', (e) => han
 document.getElementById('memoImageInput').addEventListener('change', (e) => handleMemoImage(e.target.files[0], 'memoImageBtnText', '📁 画像'));
 document.getElementById('btnRemoveImage').addEventListener('click', () => { selectedImageDataUrl = null; document.getElementById('memoImageInput').value = ""; document.getElementById('memoCameraInput').value = ""; document.getElementById('memoImagePreviewContainer').style.display = 'none'; document.getElementById('memoCameraBtnText').parentNode.style.display = 'block'; document.getElementById('memoImageBtnText').parentNode.style.display = 'block'; });
 
-// メモ保存
 document.getElementById('btnSaveMemo').addEventListener('click', async () => {
     const text = document.getElementById('memoTextInput').value.trim(); if (!text && !selectedImageDataUrl) { alert("入力必須です"); return; }
     const catInput = document.querySelector('input[name="memoCatInput"]:checked'); const category = catInput ? catInput.value : '💡 その他';
@@ -269,18 +324,17 @@ document.getElementById('btnSaveMemo').addEventListener('click', async () => {
     } catch (e) { alert("エラーが発生しました"); } finally { saveBtn.disabled = false; saveBtn.textContent = "投稿する"; }
 });
 
-// DB取得 & ティッカー更新
 async function loadMemosToMap() {
     const q = query(collection(db, "memos"), orderBy("createdAt", "desc"));
     const snap = await getDocs(q);
     allMemosData = [];
-    latestMemos = []; // ティッカー用
+    latestMemos = []; 
     
     let count = 0;
     snap.forEach(docSnap => {
         const data = { id: docSnap.id, ...docSnap.data() };
         allMemosData.push(data);
-        if (count < 3) { latestMemos.push(data); count++; } // 最新3件を抽出
+        if (count < 3) { latestMemos.push(data); count++; } 
     });
     applyFilters();
 }
@@ -299,13 +353,12 @@ function applyFilters() {
     map.getSource('memos').setData({ type: 'FeatureCollection', features: features });
 }
 
-// 📖 メモ詳細ボトムシート (時間バグ修正版)
+// 📖 メモ詳細ボトムシート (時間正確表示バグ修正版)
 function openMemoBottomSheet(props) {
     currentOpenMemoId = props.id;
     document.getElementById('sheetCategory').textContent = props.category;
     document.getElementById('sheetText').textContent = props.text;
     
-    // 正確な時間計算（バグ修正）
     const diffMin = Math.floor((Date.now() - props.createdAt) / 60000);
     let timeStr = "たった今";
     if (diffMin >= 60 * 24) timeStr = `${Math.floor(diffMin / (60 * 24))}日前`;
@@ -328,7 +381,6 @@ function openMemoBottomSheet(props) {
     document.getElementById('memoBottomSheet').classList.add('show');
 }
 
-// ❤️ いいね
 document.getElementById('btnLikeMemo').addEventListener('click', async () => {
     if(!currentOpenMemoId) return;
     try {
@@ -339,8 +391,6 @@ document.getElementById('btnLikeMemo').addEventListener('click', async () => {
         loadMemosToMap();
     } catch(e) {}
 });
-
-// 🗑️ 削除
 document.getElementById('btnDeleteMemo').addEventListener('click', async () => {
     if(!currentOpenMemoId || !confirm("削除しますか？")) return;
     await deleteDoc(doc(db, "memos", currentOpenMemoId));
@@ -348,7 +398,6 @@ document.getElementById('btnDeleteMemo').addEventListener('click', async () => {
     loadMemosToMap();
 });
 
-// 👤 プロフィールモーダル
 async function openProfileModal(targetId, targetName) {
     document.getElementById('modalName').textContent = targetName;
     document.getElementById('modalArea').textContent = "読込中..."; document.getElementById('modalTime').textContent = "読込中..."; document.getElementById('modalLikesCount').textContent = "-"; document.getElementById('modalTags').innerHTML = "";
@@ -367,7 +416,7 @@ document.getElementById('closeModalBtn').addEventListener('click', () => { docum
 document.getElementById('profileModalOverlay').addEventListener('click', () => { document.getElementById('profileModalOverlay').style.display = 'none'; document.getElementById('profileModal').style.display = 'none'; });
 
 // ==========================================
-// 🕊️ 匿名掲示板
+// 🕊️ 匿名掲示板 (完全維持)
 // ==========================================
 const avatarEmojis = ['🛵', '🚲', '🍔', '🐱', '🕶️'];
 const avatarColors = ['#1d9bf0', '#00ba7c', '#f91880', '#ff7a00', '#7856ff'];
