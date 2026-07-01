@@ -287,6 +287,11 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 /* ⬇️ .show が付いている上で、さらに .peek が付いた時の設定 */
 #memoBottomSheet.show.peek {
     /* シート全体の高さから、上部130px（カテゴリーや時間が見えるくらい）だけを残して下にズラす */
-    transform: translateY(calc(100% - 130px)) !important;
+    transform: translateY(calc(100% - 180px)) !important;
     overflow: hidden; /* 折りたたみ時は誤爆スクロールを禁止する */
+}
+
+/* 🌟 ✕ボタンと時間が被らないように、右側にスペースを空ける */
+.sheet-header {
+    padding-right: 48px !important; /* ✕ボタンの幅(32px)＋少しのゆとり分、右に余白を作る */
 }
