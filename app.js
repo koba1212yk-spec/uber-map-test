@@ -21,7 +21,7 @@ let currentUserId = "anonymous";
 let myProfileName = "";
 let isNameLocked = false; 
 
-// 🌟 🆕 複数画像・編集機能用の変数に変更
+// 🌟 🆕 複数画像・編集機能用の変数に変更1
 let selectedImageDataUrls = []; // 最大3枚まで保存する配列
 let editingMemoId = null;       // 編集中のメモID（新規投稿ならnull）
 

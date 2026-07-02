@@ -373,7 +373,7 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
     padding: 4px 10px;
     border-radius: 12px;
     z-index: 2;
-    pointer-events: none; /* タップの邪魔をしない */
+    pointer-events: none; /* タップの邪魔をしな */
 }
 
 /* ガイド：下の丸ポチ */
