@@ -295,3 +295,158 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .sheet-header {
     padding-right: 48px !important; /* ✕ボタンの幅(32px)＋少しのゆとり分、右に余白を作る */
 }
+
+
+
+
+/* 🌟 複数ピン案内エリアのデザイン */
+.memo-group-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #F8F9FA;
+    padding: 8px 16px;
+    border-radius: 8px;
+    margin: 0 16px 12px 16px;
+    font-size: 0.9em;
+    color: #1A73E8;
+    font-weight: bold;
+}
+.btn-group-nav {
+    background: #E8F0FE;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: #1A73E8;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-group-nav:active {
+    background: #D2E3FC;
+}
+
+
+
+/* ==========================================
+   📸 画像カルーセル（横スワイプ＆ガイド）
+   ========================================== */
+.carousel-container {
+    position: relative;
+    width: 100%;
+    margin-top: 12px;
+}
+/* 横スクロール（スワイプ）の要 */
+.carousel-scroll {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory; /* ピタッと止まる設定 */
+    scroll-behavior: smooth;
+    -ms-overflow-style: none; /* スクロールバーを隠す (IE, Edge) */
+    scrollbar-width: none;    /* スクロールバーを隠す (Firefox) */
+    gap: 8px; /* 画像と画像の隙間 */
+}
+.carousel-scroll::-webkit-scrollbar {
+    display: none; /* スクロールバーを隠す (Chrome, Safari) */
+}
+.carousel-scroll img {
+    width: 100%;
+    flex-shrink: 0;
+    scroll-snap-align: center; /* 画面の中央でピタッと止まる */
+    object-fit: cover;
+    border-radius: 8px;
+    max-height: 250px;
+}
+
+/* ガイド：右上の数字 (1/3など) */
+.carousel-counter {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.65);
+    color: white;
+    font-size: 0.75em;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 12px;
+    z-index: 2;
+    pointer-events: none; /* タップの邪魔をしない */
+}
+
+/* ガイド：下の丸ポチ */
+.carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+.carousel-dots .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #DADCE0;
+    transition: background 0.3s;
+}
+.carousel-dots .dot.active {
+    background: #1A73E8; /* 今見ている画像の丸ポチは青色になる */
+}
+
+
+/* ==========================================
+   🛠️ 3分割アクションバー
+   ========================================== */
+.sheet-action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #F1F3F4; /* 上に薄い線を入れる */
+}
+.action-left, .action-center, .action-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.action-left {
+    cursor: pointer;
+}
+
+/* 中央：管理ボタン (編集・削除) */
+.btn-manage {
+    background: transparent;
+    border: 1px solid #DADCE0;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: bold;
+    cursor: pointer;
+    color: #5F6368;
+}
+.btn-manage.delete {
+    color: #EA4335;
+    border-color: transparent;
+    background: #FCE8E6; /* 削除は目立つように薄い赤背景 */
+}
+
+/* 右側：リアクションボタン (いいね・通報) */
+.btn-reaction {
+    background: #F1F3F4;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #3C4043;
+}
+.btn-reaction.like {
+    color: #E91E63;
+    background: #FCE4EC; /* いいねはピンク系 */
+}

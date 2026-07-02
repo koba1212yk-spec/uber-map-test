@@ -96,24 +96,44 @@
 
             <div class="drag-handle"></div>
             <div class="sheet-content">
-                <div class="sheet-header">
-                    <h2 id="sheetCategory">🏢 建物・入口</h2>
-                    <span id="sheetTime" class="sheet-meta">--分前</span>
-                </div>
+        
+        <div id="memoGroupNav" class="memo-group-nav" style="display: none;">
+            <button id="btnGroupPrev" class="btn-group-nav">＜</button>
+            <span id="textGroupCount">付近に3件のメモがあります (1/3)</span>
+            <button id="btnGroupNext" class="btn-group-nav">＞</button>
+        </div>
+        <div class="sheet-header">
+            <h2 id="sheetCategory">🏢 建物・入口</h2>
+            <span id="sheetTime" class="sheet-meta">--分前</span>
+        </div>
                 
                 <p id="sheetText" class="sheet-text">読み込み中...</p>
-                <div id="sheetImageContainer" style="display: none; margin: 12px 0;">
-                    <img id="sheetImage" src="" style="width:100%; max-height:200px; object-fit:contain; border-radius:8px; background:#E8EAED; cursor:pointer;">
+             <div id="sheetImageContainer" class="carousel-container" style="display: none;">
+                    <div id="carouselCounter" class="carousel-counter">1 / 3</div>
+                    <div id="sheetImageScroll" class="carousel-scroll">
+                        </div>
+                    <div id="carouselDots" class="carousel-dots">
+                        </div>
                 </div>
-                
-                <div class="sheet-footer">
-                    <div class="sheet-author" id="sheetAuthorContainer">
-                        <div class="author-icon">👤</div>
+
+                <div class="sheet-action-bar">
+                    <div id="sheetAuthorContainer" class="action-left">
+                        <div class="sheet-author-icon">👤</div>
                         <span id="sheetAuthorName">匿名ドライバー</span>
                     </div>
-                    <div class="sheet-actions">
-                        <button id="btnLikeMemo" class="action-btn-light">❤️ <span id="sheetLikeCount">0</span></button>
-                        <button id="btnDeleteMemo" class="action-btn-danger" style="display: none;">削除</button>
+                    
+                    <div id="sheetManageButtons" class="action-center" style="display: none;">
+                        <button id="btnEditMemo" class="btn-manage edit">✏️ 編集</button>
+                        <button id="btnDeleteMemo" class="btn-manage delete">🗑️ 削除</button>
+                    </div>
+                    
+                    <div class="action-right">
+                        <button id="btnLikeMemo" class="btn-reaction like">
+                            ❤️ <span id="sheetLikeCount">0</span>
+                        </button>
+                        <button id="btnReportMemo" class="btn-reaction report">
+                            ⚠️ <span id="sheetReportCount">0</span>
+                        </button>
                     </div>
                 </div>
             </div>
