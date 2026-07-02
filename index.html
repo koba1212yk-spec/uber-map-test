@@ -14,7 +14,7 @@
 </head>
 <body>
 
-    
+
     <div id="mapPage" class="page-section active-page">
         <div id="map"></div>
 
@@ -123,10 +123,7 @@
                         <span id="sheetAuthorName">匿名ドライバー</span>
                     </div>
                     
-                    <div id="sheetManageButtons" class="action-center" style="display: none;">
-                        <button id="btnEditMemo" class="btn-manage edit">✏️ 編集</button>
-                        <button id="btnDeleteMemo" class="btn-manage delete">🗑️ 削除</button>
-                    </div>
+                    
                     
                     <div class="action-right">
                         <button id="btnLikeMemo" class="btn-reaction like">
@@ -136,6 +133,12 @@
                             ⚠️ <span id="sheetReportCount">0</span>
                         </button>
                     </div>
+                </div>
+                
+                <!-- 🌟 ⬇️ 新しく「いいねの下の行」に移動した管理ボタン -->
+                <div id="sheetManageButtons" class="action-bottom-row" style="display: none;">
+                    <button id="btnEditMemo" class="btn-manage edit">✏️ 編集</button>
+                    <button id="btnDeleteMemo" class="btn-manage delete">🗑️ 削除</button>
                 </div>
             </div>
         </div>

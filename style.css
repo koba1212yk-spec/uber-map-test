@@ -450,3 +450,15 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
     color: #E91E63;
     background: #FCE4EC; /* いいねはピンク系 */
 }
+
+
+
+/* 🌟 新しく追加した管理ボタンの行（いいねの下・右寄せ） */
+.action-bottom-row {
+    display: flex;
+    justify-content: flex-end; /* 右側に寄せる */
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px dashed #E8EAED; /* 区切り線を少し入れる */
+}

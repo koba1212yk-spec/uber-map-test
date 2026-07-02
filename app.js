@@ -543,7 +543,7 @@ function applyFilters() {
         }
 
         let pinOpacity = 1.0;
-        if (currentOpenMemoId && !isSelected) pinOpacity = 0.4;
+       
 
         features.push({
             type: 'Feature', geometry: { type: 'Point', coordinates: [displayLng, displayLat] },
