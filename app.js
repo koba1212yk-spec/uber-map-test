@@ -32,6 +32,7 @@ let tempPinMarker = null;
 let currentOpenMemoId = null;
 let targetLngLat = null; 
 
+let isCompassActive = false;
 let isGeoZoomReady = false; // 🌟 🆕 現在地ボタンが「＋」状態かどうか
 
 let currentGroupMemos = [];
@@ -81,9 +82,12 @@ map.on('load', () => {
     navigator.geolocation.getCurrentPosition(pos => {
         const coords = [pos.coords.longitude, pos.coords.latitude];
         map.flyTo({ center: coords, zoom: 16 });
-        if (currentLocationMarker) currentLocationMarker.remove();
-        const el = document.createElement('div'); el.className = 'current-location-dot';
-        currentLocationMarker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
+        
+        // ⬇️ 🌟【変更】元のマーカー生成処理を消して、コンパス対応の共通関数に差し替え
+        updateCurrentLocation(coords); 
+        
+        // ⬇️ 🌟【追加】初期移動が終わったら、現在地ボタンを「＋（緑色）」にする
+        setGeoZoomReady(true);
     });
 
 
@@ -100,6 +104,23 @@ map.on('load', () => {
     });
 
 
+// 🌟 🆕 現在地ドット＆扇形ライトを更新する関数
+function updateCurrentLocation(coords) {
+    if (!currentLocationMarker) {
+        const el = document.createElement('div'); 
+        el.className = 'current-location-dot';
+        
+        const cone = document.createElement('div'); 
+        cone.className = 'heading-cone'; 
+        cone.id = 'headingCone';
+        if (isCompassActive) cone.classList.add('show');
+        el.appendChild(cone);
+
+        currentLocationMarker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
+    } else {
+        currentLocationMarker.setLngLat(coords);
+    }
+}
 
     map.addSource('memos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
 
@@ -283,9 +304,9 @@ document.getElementById('geoBackBtn').addEventListener('click', () => {
         navigator.geolocation.getCurrentPosition(pos => {
             const coords = [pos.coords.longitude, pos.coords.latitude];
             map.flyTo({ center: coords, zoom: 16, duration: 800 });
-            if (currentLocationMarker) currentLocationMarker.remove();
-            const el = document.createElement('div'); el.className = 'current-location-dot';
-            currentLocationMarker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
+            
+            // 🌟 ⬇️ ここをコンパス対応の関数に差し替え！
+            updateCurrentLocation(coords); 
             
             setGeoZoomReady(true);
         });
@@ -958,4 +979,66 @@ if (btnCloseSheet) {
         currentOpenMemoId = null;
         applyFilters();
     });
+}
+
+// ==========================================
+// 🧭 コンパス（向いている方向）機能
+// ==========================================
+document.getElementById('btnCompass').addEventListener('click', async () => {
+    const icon = document.getElementById('btnCompass').querySelector('svg');
+    const cone = document.getElementById('headingCone');
+    
+    if (isCompassActive) {
+        // オフにする処理
+        isCompassActive = false;
+        icon.setAttribute('fill', '#5F6368');
+        if (cone) cone.classList.remove('show');
+        window.removeEventListener('deviceorientation', handleOrientation);
+        window.removeEventListener('deviceorientationabsolute', handleOrientation);
+        return;
+    }
+
+    // iOS 13+ のパーミッション要求（タップした瞬間にしか許可ポップアップは出せない）
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+            const permission = await DeviceOrientationEvent.requestPermission();
+            if (permission !== 'granted') {
+                alert('方向の取得が許可されませんでした。スマホのブラウザ設定を確認してください。');
+                return;
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // オンにする処理
+    isCompassActive = true;
+    icon.setAttribute('fill', '#1A73E8');
+    if (cone) cone.classList.add('show');
+
+    // AndroidとiOSで取得できるプロパティが違うため両対応
+    if ('ondeviceorientationabsolute' in window) {
+        window.addEventListener('deviceorientationabsolute', handleOrientation);
+    } else {
+        window.addEventListener('deviceorientation', handleOrientation);
+    }
+});
+
+function handleOrientation(e) {
+    const cone = document.getElementById('headingCone');
+    if (!cone || !isCompassActive) return;
+
+    let heading = null;
+    if (e.webkitCompassHeading != null) {
+        heading = e.webkitCompassHeading; // iOS
+    } else if (e.alpha != null) {
+        heading = 360 - e.alpha; // Android
+    }
+
+    if (heading !== null) {
+        // 🌟 マップ自体の回転（bearing）も差し引くことで、地図を回しても正確な方向を指す
+        const mapBearing = map.getBearing();
+        const finalRotation = heading - mapBearing;
+        cone.style.transform = `translateX(-50%) rotate(${finalRotation}deg)`;
+    }
 }

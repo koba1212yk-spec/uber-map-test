@@ -474,3 +474,35 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .geo-badge.show {
     display: flex; /* 状態B（ズーム待機）で表示 */
 }
+
+
+/* ==========================================
+   🧭 コンパス（扇形ライト）
+   ========================================== */
+.current-location-dot {
+    width: 16px;
+    height: 16px;
+    background-color: #1A73E8;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 0 4px rgba(0,0,0,0.3);
+    position: relative; 
+}
+
+.heading-cone {
+    position: absolute;
+    bottom: 50%; /* ドットの中心を起点にする */
+    left: 50%;
+    transform-origin: bottom center; 
+    transform: translateX(-50%) rotate(0deg); 
+    width: 70px;  /* 扇形の幅 */
+    height: 70px; /* 扇形の長さ */
+    background: radial-gradient(circle at bottom, rgba(26,115,232,0.45) 0%, rgba(26,115,232,0) 70%);
+    clip-path: polygon(50% 100%, 0 0, 100% 0);
+    display: none; /* 初期は非表示 */
+    pointer-events: none; /* タップの邪魔をしない */
+    z-index: -1;
+}
+.heading-cone.show {
+    display: block;
+}
