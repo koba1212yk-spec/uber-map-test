@@ -491,17 +491,17 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 
 .heading-cone {
     position: absolute;
-    bottom: 50%; /* ドットの中心を起点にする */
+    bottom: 50%; 
     left: 50%;
     transform-origin: bottom center; 
     transform: translateX(-50%) rotate(0deg); 
-    width: 70px;  /* 扇形の幅 */
-    height: 70px; /* 扇形の長さ */
+    width: 120px;  /* 🌟 少し大きくして確実に見えるように */
+    height: 120px;
     background: radial-gradient(circle at bottom, rgba(26,115,232,0.45) 0%, rgba(26,115,232,0) 70%);
     clip-path: polygon(50% 100%, 0 0, 100% 0);
-    display: none; /* 初期は非表示 */
-    pointer-events: none; /* タップの邪魔をしない */
-    z-index: -1;
+    display: none; 
+    pointer-events: none; 
+    /* 🌟 注意: z-index は指定しない（地図の裏に隠れるバグを防ぐ） */
 }
 .heading-cone.show {
     display: block;

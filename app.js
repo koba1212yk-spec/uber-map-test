@@ -986,24 +986,35 @@ if (btnCloseSheet) {
 // ==========================================
 document.getElementById('btnCompass').addEventListener('click', async () => {
     const icon = document.getElementById('btnCompass').querySelector('svg');
-    const cone = document.getElementById('headingCone');
+    let cone = document.getElementById('headingCone');
+
+    // 🌟 念のための安全策：扇形パーツが無ければ、強制的にドットに埋め込む
+    if (!cone) {
+        const dot = document.querySelector('.current-location-dot');
+        if (dot) {
+            cone = document.createElement('div');
+            cone.className = 'heading-cone';
+            cone.id = 'headingCone';
+            dot.appendChild(cone);
+        }
+    }
     
     if (isCompassActive) {
         // オフにする処理
         isCompassActive = false;
         icon.setAttribute('fill', '#5F6368');
         if (cone) cone.classList.remove('show');
-        window.removeEventListener('deviceorientation', handleOrientation);
-        window.removeEventListener('deviceorientationabsolute', handleOrientation);
+        window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
+        window.removeEventListener('deviceorientation', handleOrientation, true);
         return;
     }
 
-    // iOS 13+ のパーミッション要求（タップした瞬間にしか許可ポップアップは出せない）
+    // iOS 13+ のパーミッション要求
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try {
             const permission = await DeviceOrientationEvent.requestPermission();
             if (permission !== 'granted') {
-                alert('方向の取得が許可されませんでした。スマホのブラウザ設定を確認してください。');
+                alert('方向の取得が許可されませんでした。');
                 return;
             }
         } catch (e) {
@@ -1016,12 +1027,9 @@ document.getElementById('btnCompass').addEventListener('click', async () => {
     icon.setAttribute('fill', '#1A73E8');
     if (cone) cone.classList.add('show');
 
-    // AndroidとiOSで取得できるプロパティが違うため両対応
-    if ('ondeviceorientationabsolute' in window) {
-        window.addEventListener('deviceorientationabsolute', handleOrientation);
-    } else {
-        window.addEventListener('deviceorientation', handleOrientation);
-    }
+    // AndroidとiOSの両方のセンサーを監視
+    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+    window.addEventListener('deviceorientation', handleOrientation, true);
 });
 
 function handleOrientation(e) {
@@ -1029,16 +1037,20 @@ function handleOrientation(e) {
     if (!cone || !isCompassActive) return;
 
     let heading = null;
-    if (e.webkitCompassHeading != null) {
-        heading = e.webkitCompassHeading; // iOS
-    } else if (e.alpha != null) {
-        heading = 360 - e.alpha; // Android
+
+    // iOSの場合
+    if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
+        heading = e.webkitCompassHeading;
+    } 
+    // Android Chromeの場合（絶対方位が取れた時のみ）
+    else if ((e.absolute === true || e.type === 'deviceorientationabsolute') && e.alpha !== null) {
+        heading = 360 - e.alpha; 
     }
 
     if (heading !== null) {
-        // 🌟 マップ自体の回転（bearing）も差し引くことで、地図を回しても正確な方向を指す
+        // マップの回転分も差し引いて正確な方向を出す
         const mapBearing = map.getBearing();
         const finalRotation = heading - mapBearing;
-        cone.style.transform = `translateX(-50%) rotate(${finalRotation}deg)`;
+        cone.style.transform = `translateX(-50%) rotate(${Math.round(finalRotation)}deg)`;
     }
 }
