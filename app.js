@@ -35,6 +35,8 @@ let targetLngLat = null;
 let isCompassActive = false;
 let isGeoZoomReady = false; // 🌟 🆕 現在地ボタンが「＋」状態かどうか
 
+let isMapAnimating = false;// 🌟 追加：マップが自動移動している最中かを判定するロック機能
+
 let currentGroupMemos = [];
 let currentGroupIndex = 0;
 
@@ -294,31 +296,52 @@ function setGeoZoomReady(isReady) {
         }
     }
 }
+
+// ==========================================
+// 🎯 現在地ボタン（超シンプル＆即レスポンス版）
+// ==========================================
 document.getElementById('geoBackBtn').addEventListener('click', () => {
     if (isGeoZoomReady) {
-        // 📍 状態B：「＋」の時に押されたら、限界までズームして通常ボタンに戻す
+        // 📍 状態B：「＋」を押した時 ➔ ズームして現在地ボタン（◎）に戻す
         map.flyTo({ zoom: 20, duration: 800 });
         setGeoZoomReady(false);
     } else {
-        // 📍 状態A：通常時に押されたら、現在地に戻り「＋」状態にする
+        // 📍 状態A：現在地ボタン（◎）を押した時 ➔ 移動して「＋」にする
+
+        // 🌟 【超重要】GPSの取得を待たずに、押した瞬間に即「＋」に変える！
+        setGeoZoomReady(true);
+
         navigator.geolocation.getCurrentPosition(pos => {
             const coords = [pos.coords.longitude, pos.coords.latitude];
             map.flyTo({ center: coords, zoom: 16, duration: 800 });
+            updateCurrentLocation(coords);
             
-            // 🌟 ⬇️ ここをコンパス対応の関数に差し替え！
-            updateCurrentLocation(coords); 
-            
-            setGeoZoomReady(true);
+            // 移動が完了した後も確実に「＋」をキープする
+            map.once('moveend', () => {
+                setGeoZoomReady(true);
+            });
         });
     }
 });
 
-// 🔄 ユーザーが自分で地図を動かしたら、即座にボタンを通常状態（状態A）に戻す
-map.on('dragstart', (e) => {
-    if (e.originalEvent) setGeoZoomReady(false); // 指でのスワイプのみ検知
+// 🔄 ユーザーが自分で地図を動かしたら、即座に「現在地ボタン（◎）」に戻す
+map.on('dragstart', () => {
+    setGeoZoomReady(false);
 });
 map.on('zoomstart', (e) => {
-    if (e.originalEvent) setGeoZoomReady(false); // 指でのピンチ操作のみ検知
+    // 指でのズーム操作の時だけ戻す（自動ズーム時は無視）
+    if (e.originalEvent) {
+        setGeoZoomReady(false);
+    }
+});
+
+// 🔄 ユーザーが自分で地図を動かした時のリセット（状態Aへ戻す）
+map.on('dragstart', (e) => {
+    // 🌟 自動移動中（isMapAnimating）は、誤検知を完全に無視する！
+    if (e.originalEvent && !isMapAnimating) setGeoZoomReady(false);
+});
+map.on('zoomstart', (e) => {
+    if (e.originalEvent && !isMapAnimating) setGeoZoomReady(false);
 });
 
 // 📱 タブ切り替え
