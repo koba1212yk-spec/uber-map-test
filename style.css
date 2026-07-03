@@ -462,3 +462,15 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
     padding-top: 12px;
     border-top: 1px dashed #E8EAED; /* 区切り線を少し入れる */
 }
+
+/* ==========================================
+   🎯 現在地ボタンの＋バッジ
+   ========================================== */
+#geoBackBtn {
+    position: relative; /* バッジの基準位置にするため */
+}
+
+
+.geo-badge.show {
+    display: flex; /* 状態B（ズーム待機）で表示 */
+}

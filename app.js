@@ -32,6 +32,8 @@ let tempPinMarker = null;
 let currentOpenMemoId = null;
 let targetLngLat = null; 
 
+let isGeoZoomReady = false; // 🌟 🆕 現在地ボタンが「＋」状態かどうか
+
 let currentGroupMemos = [];
 let currentGroupIndex = 0;
 
@@ -83,6 +85,21 @@ map.on('load', () => {
         const el = document.createElement('div'); el.className = 'current-location-dot';
         currentLocationMarker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
     });
+
+
+     // 📍 起動時に自動で現在地を取得してジャンプ
+    navigator.geolocation.getCurrentPosition(pos => {
+        const coords = [pos.coords.longitude, pos.coords.latitude];
+        map.flyTo({ center: coords, zoom: 16 });
+        if (currentLocationMarker) currentLocationMarker.remove();
+        const el = document.createElement('div'); el.className = 'current-location-dot';
+        currentLocationMarker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
+        
+        // 🌟 🆕 初期移動が終わったら、ボタンを「＋（状態B）」にする
+        setGeoZoomReady(true);
+    });
+
+
 
     map.addSource('memos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
 
@@ -233,15 +250,54 @@ const execSearch = async () => {
 };
 searchInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') execSearch(); });
 
-// 🎯 現在地ボタン
+// ==========================================
+// 🎯 現在地ボタン（究極の2状態トグル）
+// ==========================================
+
+function setGeoZoomReady(isReady) {
+    isGeoZoomReady = isReady;
+    
+    // 2つのアイコンを取得
+    const iconTarget = document.getElementById('geoIconTarget');
+    const iconPlus = document.getElementById('geoIconPlus');
+
+    if (iconTarget && iconPlus) {
+        if (isReady) {
+            // 📍 状態B: 現在地にいる時は「＋マーク」だけを表示！
+            iconTarget.style.display = 'none';
+            iconPlus.style.display = 'block';
+        } else {
+            // 📍 状態A: 地図を動かした時は「現在地マーク」だけを表示！
+            iconTarget.style.display = 'block';
+            iconPlus.style.display = 'none';
+        }
+    }
+}
 document.getElementById('geoBackBtn').addEventListener('click', () => {
-    navigator.geolocation.getCurrentPosition(pos => {
-        const coords = [pos.coords.longitude, pos.coords.latitude];
-        map.flyTo({ center: coords, zoom: 16 });
-        if (currentLocationMarker) currentLocationMarker.remove();
-        const el = document.createElement('div'); el.className = 'current-location-dot';
-        currentLocationMarker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
-    });
+    if (isGeoZoomReady) {
+        // 📍 状態B：「＋」の時に押されたら、限界までズームして通常ボタンに戻す
+        map.flyTo({ zoom: 20, duration: 800 });
+        setGeoZoomReady(false);
+    } else {
+        // 📍 状態A：通常時に押されたら、現在地に戻り「＋」状態にする
+        navigator.geolocation.getCurrentPosition(pos => {
+            const coords = [pos.coords.longitude, pos.coords.latitude];
+            map.flyTo({ center: coords, zoom: 16, duration: 800 });
+            if (currentLocationMarker) currentLocationMarker.remove();
+            const el = document.createElement('div'); el.className = 'current-location-dot';
+            currentLocationMarker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
+            
+            setGeoZoomReady(true);
+        });
+    }
+});
+
+// 🔄 ユーザーが自分で地図を動かしたら、即座にボタンを通常状態（状態A）に戻す
+map.on('dragstart', (e) => {
+    if (e.originalEvent) setGeoZoomReady(false); // 指でのスワイプのみ検知
+});
+map.on('zoomstart', (e) => {
+    if (e.originalEvent) setGeoZoomReady(false); // 指でのピンチ操作のみ検知
 });
 
 // 📱 タブ切り替え
