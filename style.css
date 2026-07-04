@@ -523,25 +523,26 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 
 
 
-/* ==========================================
-   🌤️ ティッカー＆お天気ボトムシート
-   ========================================== */
 
+/* ==========================================
+   🌤️ ティッカー（下のタブメニューに隙間なくドッキング）
+   ========================================== */
 .area-info-ticker {
     position: absolute;
-    /* top: 76px; ❌ 上からの指定は完全に削除してください！ */
-    bottom: 80px; /* 🌟 🆕 下のタブメニューを避けて、下から80pxの位置に固定！ */
-    left: 16px;
-    right: 16px;
+    /* 🌟 下のメニューと全く同じ呪文を設定して完璧に合わせる！ */
+    bottom: calc(80px + env(safe-area-inset-bottom)); 
+    left: 0;
+    right: 0;
     background-color: #FFFFFF;
-    border-radius: 16px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 0;
+    border-top: 1px solid #E0E0E0;
+    box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.08);
     z-index: 10;
-    display: flex;
+    display: flex; 
     height: 48px;
-    border: 1px solid #E0E0E0;
     overflow: hidden;
 }
+
 
 .ticker-left {
     flex: 1;
