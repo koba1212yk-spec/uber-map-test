@@ -506,3 +506,130 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .heading-cone.show {
     display: block;
 }
+
+/* ==========================================
+   📝 投稿・編集パネルのオート折りたたみ（チラ見せ）
+   ========================================== */
+#memoActionPanel {
+    transition: transform 0.3s ease-out; /* スッと動くアニメーション */
+}
+
+#memoActionPanel.peek {
+    /* 🌟 パネルの7割を下へ隠し、上部の3割をチラ見せとして残す */
+    transform: translateY(70%) !important;
+    cursor: pointer; /* タップできることを示す */
+}
+
+
+
+
+/* ==========================================
+   🌤️ ティッカー＆お天気ボトムシート
+   ========================================== */
+.area-info-ticker {
+    position: absolute;
+    top: 460px;
+    left: 16px;
+    right: 16px;
+    background-color: #FFFFFF;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+    display: flex; /* 左右に分割 */
+    height: 48px;
+    border: 1px solid #E0E0E0;
+    overflow: hidden;
+}
+
+.ticker-left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.ticker-right {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    background-color: #F8F9FA;
+    border-left: 1px solid #E0E0E0;
+    cursor: pointer;
+    font-weight: bold;
+    color: #1A73E8;
+    transition: background-color 0.2s;
+}
+.ticker-right:hover {
+    background-color: #E8F0FE;
+}
+
+/* 下から上がってくるお天気シート */
+.weather-bottom-sheet {
+    position: fixed;
+    bottom: -100%; /* 初期状態は画面外（下） */
+    left: 0;
+    width: 100%;
+    background-color: #fff;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.15);
+    z-index: 2000;
+    transition: bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    padding: 16px 16px 80px 16px; /* 下のナビゲーションバーの余白を確保 */
+}
+.weather-bottom-sheet.show {
+    bottom: 0; /* クラスが付くと下からスッと表示される */
+}
+
+.sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #F0F0F0;
+}
+.sheet-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #202124;
+}
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #5F6368;
+    cursor: pointer;
+    padding: 4px;
+}
+
+/* 7項目を綺麗に並べるグリッドレイアウト */
+.weather-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+.weather-tile.main-tile {
+    grid-column: span 2;
+    display: flex;
+    align-items: center;
+    background-color: #F8F9FA;
+    padding: 12px;
+    border-radius: 12px;
+}
+.wx-main-icon { font-size: 32px; margin-right: 16px; }
+.wx-main-info { display: flex; flex-direction: column; }
+.weather-tile {
+    background-color: #F8F9FA;
+    padding: 10px 12px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+}
+.tile-icon { font-size: 20px; margin-right: 10px; }
+.tile-body { display: flex; flex-direction: column; }
+.tile-label { font-size: 11px; color: #70757A; margin-bottom: 2px; }
+.wx-value, .tile-value { font-size: 18px; font-weight: bold; color: #202124; }
+.wx-unit, .tile-unit { font-size: 12px; color: #70757A; margin-left: 2px; }
+.wx-label { font-size: 13px; color: #202124; font-weight: 500; }

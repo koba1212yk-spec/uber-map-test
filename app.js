@@ -21,9 +21,9 @@ let currentUserId = "anonymous";
 let myProfileName = "";
 let isNameLocked = false; 
 
-// 🌟 🆕 複数画像・編集機能用の変数に変更1
-let selectedImageDataUrls = []; // 最大3枚まで保存する配列
-let editingMemoId = null;       // 編集中のメモID（新規投稿ならnull）
+// 🌟 複数画像・編集機能用の変数
+let selectedImageDataUrls = []; 
+let editingMemoId = null;       
 
 let bbsSelectedImageDataUrl = null;
 let lastBbsDoc = null; 
@@ -32,10 +32,10 @@ let tempPinMarker = null;
 let currentOpenMemoId = null;
 let targetLngLat = null; 
 
-let isCompassActive = false;
-let isGeoZoomReady = false; // 🌟 🆕 現在地ボタンが「＋」状態かどうか
-
-let isMapAnimating = false;// 🌟 追加：マップが自動移動している最中かを判定するロック機能
+// 🌟 🆕 3段階シフト＆ロック管理用の変数
+let geoMode = 'A'; // 'A': 通常(◎), 'B': 扇待機, 'C': 扇起動中(ロック)
+let geoZoomTimer = null;
+let isMapAnimating = false;
 
 let currentGroupMemos = [];
 let currentGroupIndex = 0;
@@ -50,10 +50,10 @@ let isTickerFlipped = false;
 // 📱 LocalStorageから直前に開いていたタブを復元 (リロード対策)
 const savedTab = localStorage.getItem('deliMapActiveTab') || 'tabMap';
 
-// 📛 読み込み中フリーズ対策：起動した瞬間、0.1秒でローカル生成した初期名前を表示する
+// 📛 読み込み中フリーズ対策
 let localName = localStorage.getItem('deliMapTempName');
 if (!localName) {
-    const seedId = Math.floor(1000 + Math.random() * 9000); // 被らない短い4桁
+    const seedId = Math.floor(1000 + Math.random() * 9000); 
     localName = `名無し配達員(${seedId})`;
     localStorage.setItem('deliMapTempName', localName);
 }
@@ -66,8 +66,116 @@ document.getElementById('profileName').value = myProfileName;
 // ==========================================
 signInAnonymously(auth).then((userCredential) => {
     currentUserId = userCredential.user.uid;
-    loadProfile(); // 裏でFirestoreと同期・確認を行う
+    loadProfile(); 
 }).catch(e => console.error(e));
+
+// ==========================================
+// 🌟 🆕 グローバル関数群（現在地・コンパス制御）
+// ==========================================
+function updateCurrentLocation(coords) {
+    if (!currentLocationMarker) {
+        const el = document.createElement('div'); 
+        el.className = 'current-location-dot';
+        
+        const cone = document.createElement('div'); 
+        cone.className = 'heading-cone'; 
+        cone.id = 'headingCone';
+        if (geoMode === 'C') cone.classList.add('show');
+        el.appendChild(cone);
+
+        currentLocationMarker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
+    } else {
+        currentLocationMarker.setLngLat(coords);
+    }
+}
+
+function setGeoMode(mode) {
+    geoMode = mode;
+    const iconTarget = document.getElementById('geoIconTarget');
+    const iconCompass = document.getElementById('geoIconCompass');
+    let cone = document.getElementById('headingCone');
+
+    // 安全策：扇形パーツが無ければ強制的にドットに埋め込む
+    if (!cone && mode === 'C') {
+        const dot = document.querySelector('.current-location-dot');
+        if (dot) {
+            cone = document.createElement('div');
+            cone.className = 'heading-cone';
+            cone.id = 'headingCone';
+            dot.appendChild(cone);
+        }
+    }
+
+    if (iconTarget && iconCompass) {
+        if (mode === 'A') {
+            iconTarget.style.display = 'block';
+            iconCompass.style.display = 'none';
+            if (cone) cone.classList.remove('show');
+            stopCompass(); // センサー停止
+        } else if (mode === 'B') {
+            iconTarget.style.display = 'none';
+            iconCompass.style.display = 'block';
+            iconCompass.setAttribute('fill', '#5F6368'); // 待機グレー
+            if (cone) cone.classList.remove('show');
+            stopCompass(); // センサー停止
+        } else if (mode === 'C') {
+            iconTarget.style.display = 'none';
+            iconCompass.style.display = 'block';
+            iconCompass.setAttribute('fill', '#1A73E8'); // 起動青
+            if (cone) cone.classList.add('show');
+            startCompass(); // センサー起動
+        }
+    }
+}
+
+// 🌟 共通：現在地へ飛んで、終わったら「状態B（扇待機）」にする処理
+function jumpToCurrentLocation() {
+    navigator.geolocation.getCurrentPosition(pos => {
+        const coords = [pos.coords.longitude, pos.coords.latitude];
+        map.flyTo({ center: coords, zoom: 16, duration: 800 });
+        updateCurrentLocation(coords);
+
+        // 🌟 🆕 起動時および現在地ボタンを押した際、お天気を1回だけ裏で取得
+        fetchWeatherData(pos.coords.latitude, pos.coords.longitude);
+
+        clearTimeout(geoZoomTimer);
+        geoZoomTimer = setTimeout(() => {
+            setGeoMode('B'); 
+        }, 850);
+    });
+}
+
+async function startCompass() {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+            const permission = await DeviceOrientationEvent.requestPermission();
+            if (permission !== 'granted') return;
+        } catch (e) { console.error(e); }
+    }
+    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+    window.addEventListener('deviceorientation', handleOrientation, true);
+}
+function stopCompass() {
+    window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
+    window.removeEventListener('deviceorientation', handleOrientation, true);
+}
+function handleOrientation(e) {
+    const cone = document.getElementById('headingCone');
+    if (!cone || geoMode !== 'C') return;
+
+    let heading = null;
+    if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
+        heading = e.webkitCompassHeading;
+    } else if ((e.absolute === true || e.type === 'deviceorientationabsolute') && e.alpha !== null) {
+        heading = 360 - e.alpha; 
+    }
+
+    if (heading !== null) {
+        const mapBearing = map.getBearing();
+        const finalRotation = heading - mapBearing;
+        cone.style.transform = `translateX(-50%) rotate(${Math.round(finalRotation)}deg)`;
+    }
+}
 
 // ==========================================
 // 🗺️ MapTiler (Google Maps風)
@@ -81,52 +189,10 @@ const map = new maplibregl.Map({
 
 map.on('load', () => {
     // 📍 起動時に自動で現在地を取得してジャンプ
-    navigator.geolocation.getCurrentPosition(pos => {
-        const coords = [pos.coords.longitude, pos.coords.latitude];
-        map.flyTo({ center: coords, zoom: 16 });
-        
-        // ⬇️ 🌟【変更】元のマーカー生成処理を消して、コンパス対応の共通関数に差し替え
-        updateCurrentLocation(coords); 
-        
-        // ⬇️ 🌟【追加】初期移動が終わったら、現在地ボタンを「＋（緑色）」にする
-        setGeoZoomReady(true);
-    });
-
-
-     // 📍 起動時に自動で現在地を取得してジャンプ
-    navigator.geolocation.getCurrentPosition(pos => {
-        const coords = [pos.coords.longitude, pos.coords.latitude];
-        map.flyTo({ center: coords, zoom: 16 });
-        if (currentLocationMarker) currentLocationMarker.remove();
-        const el = document.createElement('div'); el.className = 'current-location-dot';
-        currentLocationMarker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
-        
-        // 🌟 🆕 初期移動が終わったら、ボタンを「＋（状態B）」にする
-        setGeoZoomReady(true);
-    });
-
-
-// 🌟 🆕 現在地ドット＆扇形ライトを更新する関数
-function updateCurrentLocation(coords) {
-    if (!currentLocationMarker) {
-        const el = document.createElement('div'); 
-        el.className = 'current-location-dot';
-        
-        const cone = document.createElement('div'); 
-        cone.className = 'heading-cone'; 
-        cone.id = 'headingCone';
-        if (isCompassActive) cone.classList.add('show');
-        el.appendChild(cone);
-
-        currentLocationMarker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
-    } else {
-        currentLocationMarker.setLngLat(coords);
-    }
-}
+    jumpToCurrentLocation();
 
     map.addSource('memos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
 
-    // 1️⃣ マテリアルアイコンをマップに追加（SVG埋め込み）
     const catIcons = {
         'icon-building': '<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="%23FFFFFF"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>',
         'icon-parking': '<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="%23FFFFFF"><path d="M13.2 11H10v2h3.2c1.1 0 2-.9 2-2s-.9-2-2-2zM8 4h5.2c2.21 0 4 1.79 4 4s-1.79 4-4 4H10v8H8V4z"/></svg>',
@@ -139,11 +205,9 @@ function updateCurrentLocation(coords) {
         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(catIcons[key]);
     });
 
-    // 2️⃣ クラスター
     map.addLayer({ id: 'clusters', type: 'circle', source: 'memos', filter: ['has', 'point_count'], paint: { 'circle-color': '#06C167', 'circle-radius': 18, 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
     map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'memos', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 14, 'text-font': ['Noto Sans Bold'] }, paint: { 'text-color': '#ffffff' } });
     
-    // 3️⃣ 枠の色
     map.addLayer({ 
         id: 'unclustered-point', 
         type: 'circle', 
@@ -176,7 +240,6 @@ function updateCurrentLocation(coords) {
         } 
     });
 
-    // 4️⃣ アイコン
     map.addLayer({ 
         id: 'unclustered-icon', 
         type: 'symbol', 
@@ -204,12 +267,8 @@ function updateCurrentLocation(coords) {
         }
     });
 
-    // ▼ イベント（見えない網）
     map.on('click', 'unclustered-point', (e) => {
-        const bbox = [
-            [e.point.x - 20, e.point.y - 20],
-            [e.point.x + 20, e.point.y + 20]
-        ];
+        const bbox = [ [e.point.x - 20, e.point.y - 20], [e.point.x + 20, e.point.y + 20] ];
         const features = map.queryRenderedFeatures(bbox, { layers: ['unclustered-point'] });
         const uniqueIds = new Set();
         currentGroupMemos = [];
@@ -219,7 +278,6 @@ function updateCurrentLocation(coords) {
                 currentGroupMemos.push(f.properties);
             }
         });
-
         currentGroupIndex = 0;
         showCurrentGroupMemo();
     });
@@ -240,11 +298,6 @@ function updateCurrentLocation(coords) {
             document.getElementById('filterBottomSheet').classList.remove('show');
             if (tempPinMarker) tempPinMarker.remove(); 
         }
-    });
-
-    map.on('dragstart', () => {
-        const sheet = document.getElementById('memoBottomSheet');
-        if (sheet.classList.contains('show')) sheet.classList.add('peek');
     });
 
     let touchTimer;
@@ -274,75 +327,69 @@ const execSearch = async () => {
 searchInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') execSearch(); });
 
 // ==========================================
-// 🎯 現在地ボタン（究極の2状態トグル）
+// 🎯 3段階シフト現在地ボタン 
 // ==========================================
-
-function setGeoZoomReady(isReady) {
-    isGeoZoomReady = isReady;
-    
-    // 2つのアイコンを取得
-    const iconTarget = document.getElementById('geoIconTarget');
-    const iconPlus = document.getElementById('geoIconPlus');
-
-    if (iconTarget && iconPlus) {
-        if (isReady) {
-            // 📍 状態B: 現在地にいる時は「＋マーク」だけを表示！
-            iconTarget.style.display = 'none';
-            iconPlus.style.display = 'block';
-        } else {
-            // 📍 状態A: 地図を動かした時は「現在地マーク」だけを表示！
-            iconTarget.style.display = 'block';
-            iconPlus.style.display = 'none';
+const geoBackBtn = document.getElementById('geoBackBtn');
+if (geoBackBtn) {
+    geoBackBtn.addEventListener('click', () => {
+        if (geoMode === 'A') {
+            // 📍 状態A ➔ 移動して状態B（扇待機）へ
+            jumpToCurrentLocation();
+        } else if (geoMode === 'B') {
+            // 📍 状態B ➔ 限界ズームして状態C（扇ライト点灯・ロック）へ！
+            map.flyTo({ zoom: 20, duration: 800 });
+            setGeoMode('C');
+        } else if (geoMode === 'C') {
+            // 📍 状態C ➔ ロックを解除して扇を消す（状態Bに戻る）
+            setGeoMode('B');
         }
-    }
+    });
 }
 
 // ==========================================
-// 🎯 現在地ボタン（超シンプル＆即レスポンス版）
+// 📝 ワンタップ現在地メモボタン
 // ==========================================
-document.getElementById('geoBackBtn').addEventListener('click', () => {
-    if (isGeoZoomReady) {
-        // 📍 状態B：「＋」を押した時 ➔ ズームして現在地ボタン（◎）に戻す
-        map.flyTo({ zoom: 20, duration: 800 });
-        setGeoZoomReady(false);
-    } else {
-        // 📍 状態A：現在地ボタン（◎）を押した時 ➔ 移動して「＋」にする
-
-        // 🌟 【超重要】GPSの取得を待たずに、押した瞬間に即「＋」に変える！
-        setGeoZoomReady(true);
-
+const btnQuickMemo = document.getElementById('btnQuickMemo');
+if (btnQuickMemo) {
+    btnQuickMemo.addEventListener('click', () => {
         navigator.geolocation.getCurrentPosition(pos => {
             const coords = [pos.coords.longitude, pos.coords.latitude];
-            map.flyTo({ center: coords, zoom: 16, duration: 800 });
+            
+            // 限界までズーム
+            map.flyTo({ center: coords, zoom: 20, duration: 800 });
             updateCurrentLocation(coords);
             
-            // 移動が完了した後も確実に「＋」をキープする
-            map.once('moveend', () => {
-                setGeoZoomReady(true);
-            });
+            // 移動が終わったら、長押しと同じイベントを擬似的に発火させる
+            setTimeout(() => {
+                map.fire('contextmenu', { lngLat: { lng: coords[0], lat: coords[1] } });
+            }, 850);
         });
-    }
-});
+    });
+}
 
-// 🔄 ユーザーが自分で地図を動かしたら、即座に「現在地ボタン（◎）」に戻す
-map.on('dragstart', () => {
-    setGeoZoomReady(false);
-});
-map.on('zoomstart', (e) => {
-    // 指でのズーム操作の時だけ戻す（自動ズーム時は無視）
-    if (e.originalEvent) {
-        setGeoZoomReady(false);
-    }
-});
+// ==========================================
+// 🔄 ユーザーが地図を動かした時の制御 ＆ オート折りたたみ
+// ==========================================
+function handleMapInteraction(e) {
+    if (!e.originalEvent) return; // プログラムによる自動移動の誤検知を防ぐ
 
-// 🔄 ユーザーが自分で地図を動かした時のリセット（状態Aへ戻す）
-map.on('dragstart', (e) => {
-    // 🌟 自動移動中（isMapAnimating）は、誤検知を完全に無視する！
-    if (e.originalEvent && !isMapAnimating) setGeoZoomReady(false);
-});
-map.on('zoomstart', (e) => {
-    if (e.originalEvent && !isMapAnimating) setGeoZoomReady(false);
-});
+    clearTimeout(geoZoomTimer);
+
+    // 📍 状態C（扇起動中）の時はロックを維持。それ以外はAに戻す。
+    if (geoMode !== 'C') setGeoMode('A');
+
+    // 📝 閲覧用シートの折りたたみ (peekクラス付与)
+    const sheet = document.getElementById('memoBottomSheet'); 
+    if (sheet && sheet.classList.contains('show')) sheet.classList.add('peek'); 
+    
+    // 📝 投稿・編集パネルの折りたたみ (CSSと連動してチラ見せに)
+    const actionPanel = document.getElementById('memoActionPanel');
+    if (actionPanel && actionPanel.classList.contains('show')) actionPanel.classList.add('peek');
+}
+
+// 指でのドラッグ開始、ズーム開始のどちらでも折りたたみを実行する
+map.on('dragstart', handleMapInteraction);
+map.on('zoomstart', handleMapInteraction);
 
 // 📱 タブ切り替え
 const tabs = { 'tabMap': 'mapPage', 'tabBbs': 'bbsPage', 'tabProfile': 'profilePage' };
@@ -470,7 +517,7 @@ filterContainer.addEventListener('change', () => { filterState.categories = Arra
 // 📍 新規登録用ピン
 function openMemoAddSheet(lngLat) {
     targetLngLat = lngLat; 
-    editingMemoId = null; // 新規なのでリセット
+    editingMemoId = null; 
     if (tempPinMarker) tempPinMarker.remove();
     
     const wrapper = document.createElement('div'); 
@@ -482,12 +529,16 @@ function openMemoAddSheet(lngLat) {
     map.easeTo({ center: lngLat, padding: { top: 90, bottom: 450, left: 0, right: 0 }, duration: 350 });
     document.getElementById('memoBottomSheet').classList.remove('show');
     document.getElementById('filterBottomSheet').classList.remove('show');
-    document.getElementById('memoActionPanel').classList.add('show');
+    
+    const actionPanel = document.getElementById('memoActionPanel');
+    actionPanel.classList.remove('peek'); // 開くときは折りたたみを解除
+    actionPanel.classList.add('show');
 }
 
-// 🌟 パネルを閉じる時（編集状態なども完全リセット）
 const closeMemoForm = () => { 
-    document.getElementById('memoActionPanel').classList.remove('show'); 
+    const actionPanel = document.getElementById('memoActionPanel');
+    actionPanel.classList.remove('show'); 
+    actionPanel.classList.remove('peek'); 
     document.getElementById('btnRemoveImage').click(); 
     document.getElementById('memoTextInput').value = ""; 
     editingMemoId = null; 
@@ -495,7 +546,7 @@ const closeMemoForm = () => {
 };
 document.getElementById('btnCancelForm').addEventListener('click', closeMemoForm);
 
-// 🌟 画像追加処理（最大3枚まで配列に格納）
+// 画像追加処理
 async function handleMemoImage(file, btnTextId, defaultText) {
     if (!file) return; 
     if (selectedImageDataUrls.length >= 3) {
@@ -504,12 +555,11 @@ async function handleMemoImage(file, btnTextId, defaultText) {
 
     document.getElementById(btnTextId).textContent = "⏳ 圧縮中"; 
     const compressedData = await compressImage(file);
-    selectedImageDataUrls.push(compressedData); // 配列に追加
+    selectedImageDataUrls.push(compressedData); 
 
-    document.getElementById('memoImagePreview').src = selectedImageDataUrls[selectedImageDataUrls.length - 1]; // 最新を表示
+    document.getElementById('memoImagePreview').src = selectedImageDataUrls[selectedImageDataUrls.length - 1]; 
     document.getElementById('memoImagePreviewContainer').style.display = 'block'; 
     
-    // ガイド用テキストの追加
     let countLabel = document.getElementById('memoImageCountLabel');
     if(!countLabel) {
         countLabel = document.createElement('div');
@@ -523,7 +573,6 @@ async function handleMemoImage(file, btnTextId, defaultText) {
     }
     countLabel.textContent = `${selectedImageDataUrls.length}枚選択中 (最大3枚)`;
 
-    // 3枚に達したらボタンを隠す
     if (selectedImageDataUrls.length >= 3) {
         document.getElementById('memoCameraBtnText').parentNode.style.display = 'none'; 
         document.getElementById('memoImageBtnText').parentNode.style.display = 'none'; 
@@ -534,7 +583,6 @@ async function handleMemoImage(file, btnTextId, defaultText) {
 document.getElementById('memoCameraInput').addEventListener('change', (e) => handleMemoImage(e.target.files[0], 'memoCameraBtnText', '📷 撮影')); 
 document.getElementById('memoImageInput').addEventListener('change', (e) => handleMemoImage(e.target.files[0], 'memoImageBtnText', '📁 画像'));
 
-// 画像クリア（全消去）
 document.getElementById('btnRemoveImage').addEventListener('click', () => { 
     selectedImageDataUrls = []; 
     document.getElementById('memoImageInput').value = ""; 
@@ -546,7 +594,6 @@ document.getElementById('btnRemoveImage').addEventListener('click', () => {
     if(countLabel) countLabel.textContent = "";
 });
 
-// 🌟 投稿・更新ボタン（配列画像をすべてアップロード）
 document.getElementById('btnSaveMemo').addEventListener('click', async () => {
     const text = document.getElementById('memoTextInput').value.trim(); 
     if (!text && selectedImageDataUrls.length === 0) { alert("入力必須です"); return; }
@@ -563,7 +610,7 @@ document.getElementById('btnSaveMemo').addEventListener('click', async () => {
         for (let i = 0; i < selectedImageDataUrls.length; i++) {
             const dataUrl = selectedImageDataUrls[i];
             if (dataUrl.startsWith('http')) {
-                finalUrls.push(dataUrl); // 編集で既にアップロード済みのURLはそのまま
+                finalUrls.push(dataUrl); 
             } else {
                 const storageRef = ref(storage, `memos/${Date.now()}_${currentUserId}_${i}.jpg`); 
                 await uploadString(storageRef, dataUrl, 'data_url'); 
@@ -574,17 +621,15 @@ document.getElementById('btnSaveMemo').addEventListener('click', async () => {
         const memoData = { 
             lat: targetLngLat.lat, lng: targetLngLat.lng, 
             category: category, text: text, 
-            imageUrls: finalUrls, // 🌟 配列として保存
-            imageUrl: finalUrls.length > 0 ? finalUrls[0] : null, // 念のため1枚目も古い形式で残す
+            imageUrls: finalUrls, 
+            imageUrl: finalUrls.length > 0 ? finalUrls[0] : null, 
             senderId: currentUserId, senderName: finalSenderName, 
             updatedAt: Date.now() 
         };
 
         if (editingMemoId) {
-            // 📝 既存のメモをアップデート
             await updateDoc(doc(db, "memos", editingMemoId), memoData);
         } else {
-            // 📝 新規作成
             memoData.likesCount = 0;
             memoData.reportCount = 0;
             memoData.createdAt = Date.now();
@@ -636,14 +681,13 @@ function applyFilters() {
                 if (dist < 0.00005) overlapCount++; 
             }
             if (overlapCount > 0) {
-                displayLng += overlapCount * 0.000012; // ちょっとだけズラす
+                displayLng += overlapCount * 0.000012; 
                 displayLat += overlapCount * 0.000012;
             }
             usedCoords.push({lng: displayLng, lat: displayLat});
         }
 
         let pinOpacity = 1.0;
-       
 
         features.push({
             type: 'Feature', geometry: { type: 'Point', coordinates: [displayLng, displayLat] },
@@ -679,12 +723,10 @@ function showCurrentGroupMemo() {
     }
 }
 
-// 🌟 ボトムシート展開＆データ流し込み（カルーセル・権限管理含む）
 function openMemoBottomSheet(props) {
     currentOpenMemoId = props.id;
     applyFilters(); 
     
-    // allMemosDataからフルデータを引っ張ってくる
     const fullData = allMemosData.find(m => m.id === props.id);
     if(!fullData) return;
 
@@ -702,20 +744,17 @@ function openMemoBottomSheet(props) {
     document.getElementById('sheetLikeCount').textContent = fullData.likesCount || 0;
     if (document.getElementById('sheetReportCount')) document.getElementById('sheetReportCount').textContent = fullData.reportCount || 0;
 
-    // 🌟 管理ボタン（編集・削除）の表示切り替え
     const manageBtns = document.getElementById('sheetManageButtons');
     if (manageBtns) manageBtns.style.display = (fullData.senderId === currentUserId) ? 'flex' : 'none';
 
     document.getElementById('sheetAuthorContainer').onclick = () => { if (fullData.senderName !== "匿名ドライバー") openProfileModal(fullData.senderId, fullData.senderName); };
     
-    // 📸 カルーセルの構築
     const imgContainer = document.getElementById('sheetImageContainer');
     const scrollArea = document.getElementById('sheetImageScroll');
     const dotsArea = document.getElementById('carouselDots');
     const counterLabel = document.getElementById('carouselCounter');
     let bottomPadding = 300; 
 
-    // 配列が存在すればそれを、無ければ古い形式の1枚を取得
     let images = fullData.imageUrls || (fullData.imageUrl ? [fullData.imageUrl] : []);
 
     if(images.length > 0) { 
@@ -740,7 +779,6 @@ function openMemoBottomSheet(props) {
             counterLabel.textContent = `1 / ${images.length}`;
             dotsArea.style.display = 'flex';
             
-            // スクロール時にドットと数字を更新
             scrollArea.onscroll = () => {
                 const scrollLeft = scrollArea.scrollLeft;
                 const width = scrollArea.clientWidth;
@@ -768,7 +806,6 @@ function openMemoBottomSheet(props) {
     sheet.classList.add('show');
 }
 
-// 🌟 いいね・通報・編集・削除 ボタンのイベント
 document.getElementById('btnLikeMemo')?.addEventListener('click', async () => {
     if(!currentOpenMemoId) return;
     try {
@@ -798,7 +835,6 @@ document.getElementById('btnDeleteMemo')?.addEventListener('click', async () => 
     loadMemosToMap();
 });
 
-// 🌟 編集ボタン（パネルを呼び出してデータをセット）
 document.getElementById('btnEditMemo')?.addEventListener('click', () => {
     const memoData = allMemosData.find(m => m.id === currentOpenMemoId);
     if(!memoData) return;
@@ -810,7 +846,6 @@ document.getElementById('btnEditMemo')?.addEventListener('click', () => {
     const catInputs = document.querySelectorAll('input[name="memoCatInput"]');
     catInputs.forEach(input => { if (input.value === memoData.category) input.checked = true; });
 
-    // 既存画像のセット
     selectedImageDataUrls = memoData.imageUrls || (memoData.imageUrl ? [memoData.imageUrl] : []);
     if (selectedImageDataUrls.length > 0) {
         document.getElementById('memoImagePreview').src = selectedImageDataUrls[0]; 
@@ -837,7 +872,9 @@ document.getElementById('btnEditMemo')?.addEventListener('click', () => {
 
     document.getElementById('memoBottomSheet').classList.remove('show');
     document.getElementById('memoBottomSheet').classList.remove('peek');
-    document.getElementById('memoActionPanel').classList.add('show');
+    const actionPanel = document.getElementById('memoActionPanel');
+    actionPanel.classList.remove('peek');
+    actionPanel.classList.add('show');
     
     map.easeTo({ center: targetLngLat, padding: { top: 90, bottom: 450, left: 0, right: 0 }, duration: 350 });
     
@@ -845,7 +882,6 @@ document.getElementById('btnEditMemo')?.addEventListener('click', () => {
     const wrapper = document.createElement('div'); const pin = document.createElement('div'); pin.className = 'sharp-temp-pin'; wrapper.appendChild(pin);
     tempPinMarker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat(targetLngLat).addTo(map);
 });
-
 
 async function openProfileModal(targetId, targetName) {
     document.getElementById('modalName').textContent = targetName;
@@ -935,7 +971,6 @@ window.openImageViewer = (url) => { document.getElementById('fullSizeImage').src
 const closeViewer = () => { document.getElementById('imageViewerOverlay').style.display = 'none'; document.getElementById('imageViewerModal').style.display = 'none'; };
 document.getElementById('closeImageViewerBtn').addEventListener('click', closeViewer); document.getElementById('imageViewerOverlay').addEventListener('click', closeViewer);
 
-
 // ==========================================
 // 📱 🌟 複数メモの矢印スワイプ操作
 // ==========================================
@@ -1004,76 +1039,100 @@ if (btnCloseSheet) {
     });
 }
 
+
 // ==========================================
-// 🧭 コンパス（向いている方向）機能
+// 📝 投稿・編集パネルのチラ見せからの復帰処理
 // ==========================================
-document.getElementById('btnCompass').addEventListener('click', async () => {
-    const icon = document.getElementById('btnCompass').querySelector('svg');
-    let cone = document.getElementById('headingCone');
-
-    // 🌟 念のための安全策：扇形パーツが無ければ、強制的にドットに埋め込む
-    if (!cone) {
-        const dot = document.querySelector('.current-location-dot');
-        if (dot) {
-            cone = document.createElement('div');
-            cone.className = 'heading-cone';
-            cone.id = 'headingCone';
-            dot.appendChild(cone);
+const actionPanel = document.getElementById('memoActionPanel');
+if (actionPanel) {
+    actionPanel.addEventListener('click', (e) => {
+        // キャンセルボタン（閉じるボタン）以外をタップした時に、チラ見せを解除して再展開する
+        if (e.target.id !== 'btnCancelForm' && actionPanel.classList.contains('peek')) {
+            actionPanel.classList.remove('peek');
         }
-    }
-    
-    if (isCompassActive) {
-        // オフにする処理
-        isCompassActive = false;
-        icon.setAttribute('fill', '#5F6368');
-        if (cone) cone.classList.remove('show');
-        window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
-        window.removeEventListener('deviceorientation', handleOrientation, true);
-        return;
-    }
+    });
+}
 
-    // iOS 13+ のパーミッション要求
-    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        try {
-            const permission = await DeviceOrientationEvent.requestPermission();
-            if (permission !== 'granted') {
-                alert('方向の取得が許可されませんでした。');
-                return;
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    }
+// ==========================================
+// 🌤️ Open-Meteo 天気データ取得 (自動更新なし・1回のみ)
+// ==========================================
+async function fetchWeatherData(lat, lng) {
+    try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,uv_index&timezone=Asia%2FTokyo`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (!data || !data.current) return;
+        const current = data.current;
 
-    // オンにする処理
-    isCompassActive = true;
-    icon.setAttribute('fill', '#1A73E8');
-    if (cone) cone.classList.add('show');
+        // 天気コードをアイコンと日本語に変換
+        const wxMap = {
+            0: { icon: "☀️", desc: "快晴" },
+            1: { icon: "🌤️", desc: "晴れ" }, 2: { icon: "⛅", desc: "晴れ曇り" }, 3: { icon: "☁️", desc: "曇り" },
+            45: { icon: "🌫️", desc: "霧" }, 48: { icon: "🌫️", desc: "霧" },
+            51: { icon: "🌧️", desc: "霧雨" }, 53: { icon: "🌧️", desc: "霧雨" }, 55: { icon: "🌧️", desc: "霧雨" },
+            61: { icon: "☔", desc: "小雨" }, 63: { icon: "☔", desc: "雨" }, 65: { icon: "🌧️", desc: "大雨" },
+            71: { icon: "☃️", desc: "軽めの雪" }, 73: { icon: "☃️", desc: "雪" }, 75: { icon: "❄️", desc: "大雪" },
+            80: { icon: "🌦️", desc: "にわか雨" }, 81: { icon: "🌦️", desc: "にわか雨" }, 82: { icon: "🌦️", desc: "激しいにわか雨" },
+            95: { icon: "⚡", desc: "雷雨" }
+        };
+        const wxInfo = wxMap[current.weather_code] || { icon: "📝", desc: "観測中" };
 
-    // AndroidとiOSの両方のセンサーを監視
-    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-    window.addEventListener('deviceorientation', handleOrientation, true);
-});
+        // 風向きを矢印に変換
+        const getWindDirEmoji = (deg) => {
+            if (deg >= 337.5 || deg < 22.5) return "⬇️ 北風";
+            if (deg >= 22.5 && deg < 67.5) return "↙️ 北東風";
+            if (deg >= 67.5 && deg < 112.5) return "⬅️ 東風";
+            if (deg >= 112.5 && deg < 157.5) return "↖️ 南東風";
+            if (deg >= 157.5 && deg < 202.5) return "⬆️ 南風";
+            if (deg >= 202.5 && deg < 247.5) return "↗️ 南西風";
+            if (deg >= 247.5 && deg < 292.5) return "➡️ 西風";
+            return "↘️ 北西風";
+        };
 
-function handleOrientation(e) {
-    const cone = document.getElementById('headingCone');
-    if (!cone || !isCompassActive) return;
+      // UIにデータを反映
+        document.getElementById('wxIcon').textContent = wxInfo.icon;
+        document.getElementById('wxDesc').textContent = wxInfo.desc;
+        document.getElementById('wxTemp').textContent = Math.round(current.temperature_2m);
+        document.getElementById('wxApparentTemp').textContent = Math.round(current.apparent_temperature);
+        document.getElementById('wxHumidity').textContent = current.relative_humidity_2m;
+        document.getElementById('wxWind').textContent = `${Math.round(current.wind_speed_10m)} (${getWindDirEmoji(current.wind_direction_10m)})`;
+        document.getElementById('wxPrecip').textContent = current.precipitation.toFixed(1);
+        document.getElementById('wxUV').textContent = Math.round(current.uv_index);
 
-    let heading = null;
-
-    // iOSの場合
-    if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
-        heading = e.webkitCompassHeading;
-    } 
-    // Android Chromeの場合（絶対方位が取れた時のみ）
-    else if ((e.absolute === true || e.type === 'deviceorientationabsolute') && e.alpha !== null) {
-        heading = 360 - e.alpha; 
-    }
-
-    if (heading !== null) {
-        // マップの回転分も差し引いて正確な方向を出す
-        const mapBearing = map.getBearing();
-        const finalRotation = heading - mapBearing;
-        cone.style.transform = `translateX(-50%) rotate(${Math.round(finalRotation)}deg)`;
+        // 🌟 追加：ティッカー右側のワンポイント表示も更新！
+        document.getElementById('tickerWeatherSummary').textContent = `${wxInfo.icon} ${Math.round(current.temperature_2m)}℃`;
+   
+    } catch (e) {
+        console.error("天気取得エラー:", e);
     }
 }
+
+// ==========================================
+// 📱 お天気ボトムシートの開閉制御
+// ==========================================
+const btnWeatherOpen = document.getElementById('weatherClickArea');
+const btnWeatherClose = document.getElementById('btnCloseWeather');
+const weatherSheet = document.getElementById('weatherBottomSheet');
+
+if (btnWeatherOpen && weatherSheet) {
+    // 右側の天気アイコンをクリックしたら下から表示
+    btnWeatherOpen.addEventListener('click', () => {
+        weatherSheet.classList.add('show');
+    });
+}
+if (btnWeatherClose && weatherSheet) {
+    // ✕ボタンで閉じる
+    btnWeatherClose.addEventListener('click', () => {
+        weatherSheet.classList.remove('show');
+    });
+}
+
+// 🔄 ユーザーが地図を動かしたら自動でお天気カードも閉じる (おまけ親切設計)
+function closeWeatherSheetOnMapMove() {
+    if (weatherSheet && weatherSheet.classList.contains('show')) {
+        weatherSheet.classList.remove('show');
+    }
+}
+map.on('dragstart', closeWeatherSheetOnMapMove);
+map.on('zoomstart', closeWeatherSheetOnMapMove);
