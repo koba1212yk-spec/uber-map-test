@@ -526,16 +526,18 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 /* ==========================================
    🌤️ ティッカー＆お天気ボトムシート
    ========================================== */
+
 .area-info-ticker {
     position: absolute;
-    top: 460px;
+    /* top: 76px; ❌ 上からの指定は完全に削除してください！ */
+    bottom: 80px; /* 🌟 🆕 下のタブメニューを避けて、下から80pxの位置に固定！ */
     left: 16px;
     right: 16px;
     background-color: #FFFFFF;
     border-radius: 16px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 10;
-    display: flex; /* 左右に分割 */
+    display: flex;
     height: 48px;
     border: 1px solid #E0E0E0;
     overflow: hidden;
