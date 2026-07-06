@@ -14,9 +14,16 @@
 </head>
 <body>
 
-
     <div id="mapPage" class="page-section active-page">
         <div id="map"></div>
+
+        <!-- 🌟 天気取得用のターゲットマーク（初期非表示） -->
+        <div id="weatherTargetMark" class="weather-target-mark" style="display: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40" fill="#1A73E8"><path d="M12 2v4m0 12v4M2 12h4m12 0h4m-5 0a7 7 0 1 1-14 0 7 7 0 0 1 14 0z"/></svg>
+        </div>
+        
+        <!-- 🌟 天気取得の決定ボタン（初期非表示） -->
+        <button id="btnWeatherConfirm" class="btn-weather-confirm" style="display: none;">📍 ここで決定</button>
 
         <div class="google-search-bar">
             <span class="search-icon">
@@ -25,7 +32,7 @@
             <input type="text" id="addressSearchInput" placeholder="ここで検索 (例: 中葛西3丁目)">
         </div>
 
-     <div id="mapControlsContainer" class="map-controls-container">
+        <div id="mapControlsContainer" class="map-controls-container">
             <button id="btnQuickMemo" class="control-circle-btn" title="現在地にメモ">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="#5F6368"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
             </button>
@@ -44,70 +51,42 @@
             </button>
         </div>
 
- <div id="areaInfoTicker" class="area-info-ticker">
+        <div id="areaInfoTicker" class="area-info-ticker">
             <div class="ticker-left" id="tickerClickArea">
                 <div class="ticker-content" id="tickerContent">
                     <div class="ticker-face ticker-front" id="tickerFront">📌 最新のマップメモ</div>
                     <div class="ticker-face ticker-back" id="tickerBack">最新の情報を取得中...</div>
                 </div>
             </div>
+            <!-- 🌟 UI改修：ニューモフィズム風天気ボタン -->
             <div class="ticker-right" id="weatherClickArea" title="天気を詳しく見る">
                 <span id="tickerWeatherSummary">☁️ --℃</span>
             </div>
         </div>
 
-<div id="weatherBottomSheet" class="weather-bottom-sheet">
-        <div class="sheet-header">
-            <h3>🌤️ 現在地の気象情報</h3>
-            <button id="btnCloseWeather" class="close-btn">✕</button>
-        </div>
-        <div class="weather-grid">
-            <div class="weather-tile main-tile">
-                <span id="wxIcon" class="wx-main-icon">☀️</span>
-                <div class="wx-main-info">
-                    <span id="wxTemp" class="wx-value">--</span><span class="wx-unit">℃</span>
-                    <div id="wxDesc" class="wx-label">取得中...</div>
-                </div>
+        <div id="weatherBottomSheet" class="weather-bottom-sheet">
+            <div class="sheet-header" style="flex-direction: column; align-items: flex-start; gap: 12px; position: relative;">
+                <!-- 🌟 地名表示枠を追加 -->
+                <h3 style="margin: 0;">🌤️ <span id="weatherLocationName">現在地周辺</span> の気象情報</h3>
+                <button id="btnCloseWeather" class="close-btn" style="position: absolute; right: 0; top: 0;">✕</button>
+                <!-- 🌟 別のエリアを選ぶボタン -->
+                <button id="btnSelectWeatherArea" class="btn-outline-blue" style="padding: 6px 12px; font-size: 0.85em; width: auto;">📍 別のエリアの天気を見る</button>
             </div>
-            <div class="weather-tile">
-                <span class="tile-icon">🧥</span>
-                <div class="tile-body">
-                    <div class="tile-label">体感温度</div>
-                    <div><span id="wxApparentTemp" class="tile-value">--</span><span class="tile-unit">℃</span></div>
+            <div class="weather-grid" style="margin-top: 15px;">
+                <div class="weather-tile main-tile">
+                    <span id="wxIcon" class="wx-main-icon">☀️</span>
+                    <div class="wx-main-info">
+                        <span id="wxTemp" class="wx-value">--</span><span class="wx-unit">℃</span>
+                        <div id="wxDesc" class="wx-label">取得中...</div>
+                    </div>
                 </div>
-            </div>
-            <div class="weather-tile">
-                <span class="tile-icon">💧</span>
-                <div class="tile-body">
-                    <div class="tile-label">相対湿度</div>
-                    <div><span id="wxHumidity" class="tile-value">--</span><span class="tile-unit">%</span></div>
-                </div>
-            </div>
-            <div class="weather-tile">
-                <span class="tile-icon">🚩</span>
-                <div class="tile-body">
-                    <div class="tile-label">風速・風向き</div>
-                    <div><span id="wxWind" class="tile-value">--</span><span class="tile-unit">m/s</span></div>
-                </div>
-            </div>
-            <div class="weather-tile">
-                <span class="tile-icon">☔</span>
-                <div class="tile-body">
-                    <div class="tile-label">降水量</div>
-                    <div><span id="wxPrecip" class="tile-value">--</span><span class="tile-unit">mm</span></div>
-                </div>
-            </div>
-            <div class="weather-tile">
-                <span class="tile-icon">☀️</span>
-                <div class="tile-body">
-                    <div class="tile-label">紫外線 (UV)</div>
-                    <div><span id="wxUV" class="tile-value">--</span></div>
-                </div>
+                <div class="weather-tile"><span class="tile-icon">🧥</span><div class="tile-body"><div class="tile-label">体感温度</div><div><span id="wxApparentTemp" class="tile-value">--</span><span class="tile-unit">℃</span></div></div></div>
+                <div class="weather-tile"><span class="tile-icon">💧</span><div class="tile-body"><div class="tile-label">相対湿度</div><div><span id="wxHumidity" class="tile-value">--</span><span class="tile-unit">%</span></div></div></div>
+                <div class="weather-tile"><span class="tile-icon">🚩</span><div class="tile-body"><div class="tile-label">風速・風向き</div><div><span id="wxWind" class="tile-value">--</span><span class="tile-unit">m/s</span></div></div></div>
+                <div class="weather-tile"><span class="tile-icon">☔</span><div class="tile-body"><div class="tile-label">降水量</div><div><span id="wxPrecip" class="tile-value">--</span><span class="tile-unit">mm</span></div></div></div>
+                <div class="weather-tile"><span class="tile-icon">☀️</span><div class="tile-body"><div class="tile-label">紫外線 (UV)</div><div><span id="wxUV" class="tile-value">--</span></div></div></div>
             </div>
         </div>
-    </div>
-
-
 
         <div id="memoActionPanel" class="bottom-sheet">
             <div class="drag-handle"></div>
@@ -130,11 +109,7 @@
                 <button id="btnRemoveImage" class="remove-img-btn">×</button>
             </div>
             
-            <label class="toggle-name-label">
-                <input type="checkbox" id="chkShowName" checked>
-                <span>自分の名前で投稿する（オフで匿名）</span>
-            </label>
-
+            <label class="toggle-name-label"><input type="checkbox" id="chkShowName" checked><span>自分の名前で投稿する（オフで匿名）</span></label>
             <div style="display: flex; gap: 10px; margin-top: 15px;">
                 <button id="btnSaveMemo" class="btn-main-blue" style="flex:2;">投稿する</button>
                 <button id="btnCancelForm" class="btn-text-gray" style="flex:1;">キャンセル</button>
@@ -148,8 +123,7 @@
                 <button id="btnCloseFilter" style="background:none; border:none; font-size:0.9em; color:#1A73E8; font-weight:bold; cursor:pointer;">閉じる</button>
             </h3>
             <label class="toggle-name-label" style="font-size: 1em; padding: 10px 0; border-bottom: 1px solid #E8EAED; margin-bottom: 15px;">
-                <input type="checkbox" id="chkShowMineOnly">
-                <span style="color:#1A73E8; font-weight:bold;">自分のメモだけを表示</span>
+                <input type="checkbox" id="chkShowMineOnly"><span style="color:#1A73E8; font-weight:bold;">自分のメモだけを表示</span>
             </label>
             <p style="font-size: 0.9em; font-weight:bold; color:#5F6368; margin-bottom: 8px;">カテゴリ絞り込み</p>
             <div class="category-selector" id="filterCategoryContainer"></div>
@@ -157,48 +131,33 @@
 
         <div id="memoBottomSheet" class="bottom-sheet">
             <button id="btnCloseMemoSheet" class="btn-close-sheet">✕</button>
-
             <div class="drag-handle"></div>
             <div class="sheet-content">
-        
-        <div id="memoGroupNav" class="memo-group-nav" style="display: none;">
-            <button id="btnGroupPrev" class="btn-group-nav">＜</button>
-            <span id="textGroupCount">付近に3件のメモがあります (1/3)</span>
-            <button id="btnGroupNext" class="btn-group-nav">＞</button>
-        </div>
-        <div class="sheet-header">
-            <h2 id="sheetCategory">🏢 建物・入口</h2>
-            <span id="sheetTime" class="sheet-meta">--分前</span>
-        </div>
-                
-                <p id="sheetText" class="sheet-text">読み込み中...</p>
-             <div id="sheetImageContainer" class="carousel-container" style="display: none;">
-                    <div id="carouselCounter" class="carousel-counter">1 / 3</div>
-                    <div id="sheetImageScroll" class="carousel-scroll">
-                        </div>
-                    <div id="carouselDots" class="carousel-dots">
-                        </div>
+                <div id="memoGroupNav" class="memo-group-nav" style="display: none;">
+                    <button id="btnGroupPrev" class="btn-group-nav">＜</button>
+                    <span id="textGroupCount">付近に3件のメモがあります (1/3)</span>
+                    <button id="btnGroupNext" class="btn-group-nav">＞</button>
                 </div>
-
+                <div class="sheet-header">
+                    <h2 id="sheetCategory">🏢 建物・入口</h2>
+                    <span id="sheetTime" class="sheet-meta">--分前</span>
+                </div>
+                <p id="sheetText" class="sheet-text">読み込み中...</p>
+                <div id="sheetImageContainer" class="carousel-container" style="display: none;">
+                    <div id="carouselCounter" class="carousel-counter">1 / 3</div>
+                    <div id="sheetImageScroll" class="carousel-scroll"></div>
+                    <div id="carouselDots" class="carousel-dots"></div>
+                </div>
                 <div class="sheet-action-bar">
                     <div id="sheetAuthorContainer" class="action-left">
                         <div class="sheet-author-icon">👤</div>
                         <span id="sheetAuthorName">匿名ドライバー</span>
                     </div>
-                    
-                    
-                    
                     <div class="action-right">
-                        <button id="btnLikeMemo" class="btn-reaction like">
-                            ❤️ <span id="sheetLikeCount">0</span>
-                        </button>
-                        <button id="btnReportMemo" class="btn-reaction report">
-                            ⚠️ <span id="sheetReportCount">0</span>
-                        </button>
+                        <button id="btnLikeMemo" class="btn-reaction like">❤️ <span id="sheetLikeCount">0</span></button>
+                        <button id="btnReportMemo" class="btn-reaction report">⚠️ <span id="sheetReportCount">0</span></button>
                     </div>
                 </div>
-                
-                <!-- 🌟 ⬇️ 新しく「いいねの下の行」に移動した管理ボタン -->
                 <div id="sheetManageButtons" class="action-bottom-row" style="display: none;">
                     <button id="btnEditMemo" class="btn-manage edit">✏️ 編集</button>
                     <button id="btnDeleteMemo" class="btn-manage delete">🗑️ 削除</button>
@@ -207,16 +166,38 @@
         </div>
     </div>
 
-    <div id="bbsPage" class="page-section" style="display: none; background: #000;">
-        <div class="bbs-header"><div class="bbs-title">葛西リアルタイム・タイムライン</div></div>
-        <div id="bbsList" class="bbs-timeline"></div>
-        <button id="btnLoadMoreBbs" class="bbs-load-more-btn" style="display: none;">🔍 さらに読み込む</button>
-        <button id="fabPostBtn" class="twitter-fab">+</button>
+    <!-- 🌟 サポート・設定画面（左タブ） -->
+    <div id="supportPage" class="page-section profile-page-container" style="display: none;">
+        <h2 class="profile-page-title">お知らせ</h2>
+        <div class="announcement-box">
+            <ul>
+                <li><span class="badge new">NEW</span> <b>2026/07/06</b><br>現在地ボタンが3段階シフトに進化しました！ロック中は画面を動かしても方向が追従します。</li>
+                <li><span class="badge info">INFO</span> <b>2026/07/05</b><br>ワンタップ現在地メモが爆速になりました。保存後のアニメーションも追加しています。</li>
+            </ul>
+        </div>
+
+        <h2 class="profile-page-title" style="margin-top:25px;">使い方ガイド</h2>
+        <div class="accordion-container">
+            <button class="accordion-header">❓ 現在地ボタンが「扇マーク」に変わったのは何？</button>
+            <div class="accordion-content"><p>現在地ボタンは「通常 ➔ 扇待機 ➔ 扇起動(ロック)」の3段階に進化しました。青い扇マークが出ている時は、スマホの向きに合わせて進行方向を照らします。ロック中は地図を動かしても扇が消えません！</p></div>
+            
+            <button class="accordion-header">❓ ワンタップで今いる場所にメモを残すには？</button>
+            <div class="accordion-content"><p>画面右上の「鉛筆マーク」を押すと、一瞬で現在地にズームしてメモ作成画面が開きます！</p></div>
+            
+            <button class="accordion-header">❓ 地図を動かしたときにメモ画面が引っ込むんだけど？</button>
+            <div class="accordion-content"><p>地図を広く見渡せるように、ドラッグするとメモが一時的に下へ「チラ見せ」状態になります。再度メモ部分をタップすると元に戻ります。</p></div>
+        </div>
+
+        <hr class="menu-divider" style="margin:25px 0;">
+        <h2 class="profile-page-title">フィードバック (ご要望・不具合報告)</h2>
+        <textarea id="opinionInput" placeholder="バグ報告や欲しい機能など..." class="feedback-textarea"></textarea>
+        <button id="submitOpinionBtn" class="btn-outline-blue">送信する</button>
+        <div style="height: 100px;"></div>
     </div>
 
+    <!-- プロフィール画面（右タブ） -->
     <div id="profilePage" class="page-section profile-page-container" style="display: none;">
         <h2 class="profile-page-title">アカウント設定</h2>
-        
         <div id="profileReadMode">
             <div class="profile-card">
                 <div class="profile-avatar-large">👤</div>
@@ -228,7 +209,6 @@
             </div>
             <button id="editProfileBtn" class="btn-outline-blue">プロフィールを編集</button>
         </div>
-
         <div id="profileEditMode" style="display: none;">
             <div class="input-group">
                 <label>公開する名前</label>
@@ -242,12 +222,6 @@
             <button id="saveProfileBtn" class="btn-main-blue" style="width: 100%; margin-bottom: 10px;">保存する</button>
             <button id="cancelEditBtn" class="btn-text-gray" style="width: 100%;">キャンセル</button>
         </div>
-
-        <hr class="menu-divider">
-        <h2 class="profile-page-title">フィードバック</h2>
-        <textarea id="opinionInput" placeholder="バグ報告や欲しい機能など..." class="feedback-textarea"></textarea>
-        <button id="submitOpinionBtn" class="btn-outline-blue">送信する</button>
-
         <div class="copyright-notice">
             <p><strong>© 2026 DeliMap. All Rights Reserved.</strong></p>
             <p>当アプリのデザイン、レイアウト、および独自機能の無断転載・複製を固く禁じます。</p>
@@ -256,14 +230,15 @@
         <div style="height: 100px;"></div>
     </div>
 
+    <!-- ボトムナビゲーション -->
     <nav class="bottom-nav">
+        <button id="tabSupport" class="nav-tab">
+            <div class="nav-icon-container"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></svg></div>
+            <span>サポート</span>
+        </button>
         <button id="tabMap" class="nav-tab active">
             <div class="nav-icon-container"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>
             <span>スポット</span>
-        </button>
-        <button id="tabBbs" class="nav-tab">
-            <div class="nav-icon-container"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg></div>
-            <span>つぶやき</span>
         </button>
         <button id="tabProfile" class="nav-tab">
             <div class="nav-icon-container"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
@@ -271,20 +246,7 @@
         </button>
     </nav>
 
-    <div id="bbsComposePage" style="display: none;" class="bbs-compose-overlay">
-        <div class="bbs-compose-header"><button id="btnCancelBbs" class="bbs-compose-cancel">キャンセル</button><button id="btnPostBbs" class="twitter-post-btn">ポスト</button></div>
-        <div class="bbs-compose-body">
-            <div class="bbs-avatar-column"><div class="twitter-avatar-mock"></div></div>
-            <div class="bbs-form-column">
-                <textarea id="bbsTextInput" placeholder="いまどうしてる？"></textarea>
-                <div id="bbsImagePreviewContainer" style="display:none; position:relative; margin-bottom:12px;"><img id="bbsImagePreview" src="" class="bbs-compose-image"><button id="btnRemoveBbsImage" class="remove-img-btn">×</button></div>
-                <div class="bbs-actions-bar">
-                    <div class="bbs-media-buttons"><label class="bbs-media-icon-btn"><input type="file" id="bbsCameraInput" accept="image/*" capture="environment" style="display:none;">📷</label><label class="bbs-media-icon-btn"><input type="file" id="bbsImageInput" accept="image/*" style="display:none;">📁</label><span id="bbsCompressStatus" style="font-size:0.75em; color:#71767B; margin-left:5px;"></span></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <!-- プロフィール用モーダル -->
     <div id="profileModalOverlay" class="modal-overlay"></div>
     <div id="profileModal" class="profile-modal">
         <button id="closeModalBtn" class="close-modal-btn">×</button>
@@ -297,7 +259,7 @@
             <div id="modalTags" class="tags-container" style="margin-top: 10px;"></div>
         </div>
     </div>
-
+    
     <div id="imageViewerOverlay" class="modal-overlay" style="z-index: 4000;"></div>
     <div id="imageViewerModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index: 4001; max-width:95vw; max-height:95vh;">
         <button id="closeImageViewerBtn" style="position:absolute; top:-40px; right:0; background:none; border:none; color:#fff; font-size:2.5em; cursor:pointer;">×</button>

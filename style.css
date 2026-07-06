@@ -8,62 +8,14 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100dvh; font-family: "G
 /* 🗺️ マップエリア */
 #map { width: 100%; height: 100dvh; position: absolute; top: 0; left: 0; z-index: 1; background: #E5E3DF; }
 
-/* 🔍 住所検索バー (見切れを完全に防ぐ上下中央配置構造) */
+/* 🔍 住所検索バー */
 .google-search-bar { position: absolute; top: calc(env(safe-area-inset-top, 15px) + 10px); left: 15px; right: 15px; z-index: 10; display: flex; align-items: center; background: #FFFFFF; height: 50px; border-radius: 25px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); overflow: hidden; padding: 0 16px; }
 .search-icon { display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; }
-
-.google-search-bar input {
-    flex: 1;
-    border: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    font-size: 16px;
-    color: #202124;
-    outline: none;
-    margin: 0;
-    -webkit-appearance: none;
-    border-radius: 0;
-
-    /* ⬇️ はみ出しを絶対に防ぎつつ、上下幅を広げて中央にする設定 ⬇️ */
-    height: 32px;         /* 20pxより大きく、外枠(50px)より小さいので絶対にはみ出しません */
-    line-height: 32px;    /* 文字の上下のガタつきを固定します */
-    padding-top: 7px;     /* ★これで見切れていた「上寄り」を下に押し下げてド真ん中にします */
-    padding-bottom: 0;
-    padding-left: 0;
-    padding-right: 0;
-}
-
-
-
-/* パソコンのChrome専用：検索バーの文字位置を完璧に中央へ固定 */
-#addressSearchInput {
-    flex: 1 !important;
-    border: none !important;
-    background: transparent !important;
-    outline: none !important;
-    font-size: 16px !important;
-    color: #202124 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-
-    /* ⬇️ パソコンのChromeで上下のド真ん中に固定する設定 ⬇️ */
-    height: 50px !important;       /* 外枠の白バー(50px)と完全に高さを一致させる */
-    line-height: 50px !important;  /* 高さと同じ数値を指定すると、文字が完璧に垂直中央になります */
-}
-
-
-
-
-
-
-
-
-
-
-
+.google-search-bar input { flex: 1; border: none !important; background: transparent !important; box-shadow: none !important; font-size: 16px; color: #202124; outline: none; margin: 0; -webkit-appearance: none; border-radius: 0; height: 32px; line-height: 32px; padding-top: 7px; padding-bottom: 0; padding-left: 0; padding-right: 0; }
+#addressSearchInput { flex: 1 !important; border: none !important; background: transparent !important; outline: none !important; font-size: 16px !important; color: #202124 !important; margin: 0 !important; padding: 0 !important; height: 50px !important; line-height: 50px !important; }
 .google-search-bar input::placeholder { color: #70757A; }
 
-/* 📱 ボトムナビゲーション (Google Material 3) */
+/* 📱 ボトムナビゲーション */
 .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: calc(80px + env(safe-area-inset-bottom)); background: #F8F9FA; border-top: 1px solid #E8EAED; display: flex; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; }
 .nav-tab { background: none; border: none; color: #444746; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 80px; }
 .nav-icon-container { width: 64px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 16px; transition: background 0.2s, color 0.2s; }
@@ -71,81 +23,48 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100dvh; font-family: "G
 .nav-tab.active .nav-icon-container { background: #C2E7FF; color: #001D35; }
 .nav-tab.active span { color: #001D35; font-weight: 600; }
 
-/* 🎯 マップ右下 UIボタン (ティッカーを避けて少し上配置) */
+/* 🎯 マップ右下 UIボタン */
 .map-controls-container { position: absolute; bottom: calc(145px + env(safe-area-inset-bottom)); right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 12px; }
-
-
-/* 🎯 マップ右下 UIボタン（角丸四角形に修正） */
-.control-circle-btn {
-    width: 48px;
-    height: 48px;
-    background: #FFFFFF;
-    border: none;
-    border-radius: 16px; /* ⬅️ 50% から 16px に変更してプロ仕様に！ */
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-
+.control-circle-btn { width: 48px; height: 48px; background: #FFFFFF; border: none; border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer; display: flex; justify-content: center; align-items: center; }
 
 /* 🔵 現在地青パルス */
 .current-location-dot { width: 18px; height: 18px; background-color: #4285F4; border: 3px solid #FFFFFF; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.3); position: relative; }
 .current-location-dot::after { content: ''; position: absolute; top: -14px; left: -14px; width: 40px; height: 40px; background-color: rgba(66, 133, 244, 0.4); border-radius: 50%; animation: pulse-blue 2s infinite ease-out; }
 @keyframes pulse-blue { 0% { transform: scale(0.2); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
 
-/* 📍 針付き極細シャープ仮ピン (Google Maps仕様) */
+/* 📍 仮ピン */
 .sharp-temp-pin { width: 28px; height: 40px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36"><path fill="%23EA4335" d="M12 0C5.37 0 0 5.37 0 12c0 9 12 24 12 24s12-15 12-24c0-6.63-5.37-12-12-12zm0 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center bottom; filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.3)); animation: dropBounce 0.35s ease-out; }
 @keyframes dropBounce { 0% { transform: translateY(-25px); opacity: 0; } 60% { transform: translateY(0); opacity: 1; } 80% { transform: translateY(-4px); } 100% { transform: translateY(0); } }
 
+/* 🌟 メモ保存時のバウンドアニメーションピン */
+.success-bounce-pin { width: 24px; height: 24px; background-color: #06C167; border: 3px solid #FFFFFF; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); animation: doubleBounce 0.6s ease-out forwards; }
+@keyframes doubleBounce { 0% { transform: translateY(0); opacity: 0; } 20% { transform: translateY(-20px); opacity: 1; } 40% { transform: translateY(0); } 60% { transform: translateY(-10px); } 80% { transform: translateY(0); } 90% { transform: translateY(-4px); } 100% { transform: translateY(0); opacity: 1; } }
+
 /* 📻 エリア注目情報 (3D回転ティッカー) */
-/* 📻 エリア注目情報（角丸と余白の強制修正版） */
-.area-info-ticker {
-    position: absolute;
-    bottom: calc(80px + env(safe-area-inset-bottom));
-    left: 0;
-    right: 0;
-    height: 56px; /* 少し高さを出して余裕を持たせる */
-    background: #FFFFFF;
-    
-    /* ⬇️ 🌟 絶対に角を丸くする強制命令 */
-    border-radius: 40px 40px 0 0 !important; 
-    
-    /* ⬇️ 🌟 角丸シートが地図から浮き出るように影を少し濃くする */
-    box-shadow: 0 -4px 16px rgba(0,0,0,0.1) !important; 
-    border-top: none !important; /* 影を目立たせるために線は消す */
-    
-    display: flex;
-    align-items: center;
-    z-index: 10;
-    padding-top: 8px;
-}
+.area-info-ticker { position: absolute; bottom: calc(80px + env(safe-area-inset-bottom)); left: 0; right: 0; height: 56px; background: #FFFFFF; border-radius: 40px 40px 0 0 !important; box-shadow: 0 -4px 16px rgba(0,0,0,0.1) !important; border-top: none !important; display: flex; align-items: center; z-index: 10; padding-top: 8px; }
+.ticker-left { flex: 1; padding: 0 0 0 24px !important; height: 100%; perspective: 1000px; display: flex; align-items: center; cursor: pointer; overflow: hidden; }
 
-.ticker-left {
-    flex: 1;
-    /* ⬇️ 🌟 左側の文字の「見切れ」を直すための強力な余白 */
-    padding: 0 0 0 24px !important; 
-    height: 100%;
-    perspective: 1000px;
-    display: flex;
-    align-items: center;
+/* 🌟 UI改修：ニューモフィズム風の天気ボタン */
+.ticker-right { 
+    border-left: none; /* ダサい縦線を削除 */
+    margin: 8px 16px 8px 8px; /* カード内に収めるマージン */
+    padding: 0 16px !important; 
+    border-radius: 12px; /* 丸みを持たせる */
+    background: #FFFFFF; /* 背景を白に統一 */
+    box-shadow: 3px 3px 6px #E8EAED, -3px -3px 6px #FFFFFF; /* 浮き出し（ニューモフィズム）の影 */
+    font-size: 0.85em; 
+    font-weight: bold; 
+    color: #5F6368; 
+    display: flex; 
+    align-items: center; 
+    height: 70%; 
+    flex-shrink: 0; 
+    transition: all 0.2s ease; 
     cursor: pointer;
-    overflow: hidden;
 }
-
-.ticker-right {
-    border-left: 1px solid #E8EAED;
-    /* ⬇️ 🌟 右側の天気も端っこから離すための強力な余白 */
-    padding: 0 24px !important; 
-    font-size: 0.85em;
-    font-weight: bold;
-    color: #5F6368;
-    display: flex;
-    align-items: center;
-    height: 60%;
-    flex-shrink: 0;
+.ticker-right:active { 
+    /* 押した時に凹むアニメーション */
+    box-shadow: inset 2px 2px 4px #E8EAED, inset -2px -2px 4px #FFFFFF; 
 }
 
 .ticker-content { position: relative; width: 100%; height: 20px; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -159,12 +78,10 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100dvh; font-family: "G
 .bottom-sheet.show { transform: translateY(0); }
 .drag-handle { width: 36px; height: 4px; background: #DADCE0; border-radius: 2px; margin: -10px auto 15px auto; }
 
-/* ボタン・フォーム・その他UI */
+/* ボタン・フォームUI */
 .btn-main-blue { padding: 12px; background: #1A73E8; color: #FFF; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1em; display: flex; justify-content: center; align-items: center; }
 .btn-outline-blue { padding: 12px; background: transparent; color: #1A73E8; border: 1px solid #1A73E8; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
 .btn-text-gray { padding: 12px; background: transparent; color: #5F6368; border: none; font-weight: bold; cursor: pointer; }
-.action-btn-light { padding: 8px 16px; background: #F1F3F4; color: #202124; border: none; border-radius: 16px; font-weight: bold; cursor: pointer; font-size: 0.9em; display: flex; align-items: center; gap: 6px; }
-.action-btn-danger { padding: 8px 16px; background: transparent; color: #D93025; border: 1px solid #D93025; border-radius: 16px; font-weight: bold; cursor: pointer; font-size: 0.9em; }
 
 textarea, input[type="text"] { width: 100%; padding: 12px; border: 1px solid #DADCE0; background: #F8F9FA; color: #202124; border-radius: 8px; font-size: 1em; font-family: inherit; resize: none; margin-bottom: 12px; }
 textarea:focus, input[type="text"]:focus { outline: none; border-color: #1A73E8; background: #FFFFFF; }
@@ -179,38 +96,70 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .toggle-name-label { display: flex; align-items: center; gap: 10px; font-size: 0.85em; color: #5F6368; margin-top: 10px; cursor: pointer; }
 .toggle-name-label input { accent-color: #1A73E8; width: 18px; height: 18px; }
 
-.sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+/* 📝 オート折りたたみ（チラ見せ） */
+#memoActionPanel, #memoBottomSheet { transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+#memoActionPanel.peek { transform: translateY(70%) !important; cursor: pointer; }
+#memoBottomSheet.show.peek { transform: translateY(calc(100% - 180px)) !important; overflow: hidden; }
+
+/* 📝 メモ詳細シート */
+.sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-right: 48px !important; }
 .sheet-header h2 { margin: 0; font-size: 1.3em; color: #202124; }
 .sheet-meta { font-size: 0.85em; color: #70757A; }
 .sheet-text { font-size: 1em; line-height: 1.5; color: #3C4043; margin: 0 0 15px 0; white-space: pre-wrap; }
+.btn-close-sheet { position: absolute; top: 12px; right: 16px; width: 32px; height: 32px; border-radius: 50%; background: #F1F3F4; border: none; font-size: 16px; font-weight: bold; color: #5F6368; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
 
-/* 🆕 メモ詳細の画像枠（遅延ズレを100%防ぐ固定プレースホルダー） */
-#sheetImageContainer {
-    width: 100%;
-    height: 200px; /* ⬅️ 中身が空でも最初から高さを確保する */
-    background: #F1F3F4; /* 読み込み中のグレー背景 */
-    border-radius: 8px;
-    margin: 12px 0;
-    display: none; /* デフォルトは非表示 */
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
+.memo-group-nav { display: flex; justify-content: space-between; align-items: center; background: #F8F9FA; padding: 8px 16px; border-radius: 8px; margin: 0 16px 12px 16px; font-size: 0.9em; color: #1A73E8; font-weight: bold; }
+.btn-group-nav { background: #E8F0FE; border: none; width: 32px; height: 32px; border-radius: 50%; color: #1A73E8; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.btn-group-nav:active { background: #D2E3FC; }
 
-#sheetImage {
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* 枠の中で比率を綺麗に保つ */
-    cursor: pointer;
-}
+/* 画像カルーセル */
+#sheetImageContainer { width: 100%; height: 200px; background: #F1F3F4; border-radius: 8px; margin: 12px 0; display: none; align-items: center; justify-content: center; overflow: hidden; }
+.carousel-container { position: relative; width: 100%; margin-top: 12px; }
+.carousel-scroll { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; -ms-overflow-style: none; scrollbar-width: none; gap: 8px; }
+.carousel-scroll::-webkit-scrollbar { display: none; }
+.carousel-scroll img { width: 100%; flex-shrink: 0; scroll-snap-align: center; object-fit: cover; border-radius: 8px; max-height: 250px; cursor: pointer; }
+.carousel-counter { position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0, 0.65); color: white; font-size: 0.75em; font-weight: bold; padding: 4px 10px; border-radius: 12px; z-index: 2; pointer-events: none; }
+.carousel-dots { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
+.carousel-dots .dot { width: 6px; height: 6px; border-radius: 50%; background: #DADCE0; transition: background 0.3s; }
+.carousel-dots .dot.active { background: #1A73E8; }
 
+/* アクションバー */
+.sheet-action-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid #F1F3F4; }
+.action-left, .action-right { display: flex; align-items: center; gap: 8px; }
+.action-left { cursor: pointer; }
+.sheet-author-icon { width: 32px; height: 32px; background: #E8EAED; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2em; }
+.btn-manage { background: transparent; border: 1px solid #DADCE0; padding: 6px 12px; border-radius: 20px; font-size: 0.8em; font-weight: bold; cursor: pointer; color: #5F6368; }
+.btn-manage.delete { color: #EA4335; border-color: transparent; background: #FCE8E6; }
+.btn-reaction { background: #F1F3F4; border: none; padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #3C4043; }
+.btn-reaction.like { color: #E91E63; background: #FCE4EC; }
+.action-bottom-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px; padding-top: 12px; border-top: 1px dashed #E8EAED; }
 
-.sheet-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #F1F3F4; padding-top: 12px; }
-.sheet-author { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.author-icon { width: 32px; height: 32px; background: #E8EAED; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2em; }
-.sheet-actions { display: flex; gap: 10px; }
+/* 🧭 コンパス（扇形ライト） */
+#geoBackBtn { position: relative; }
+.heading-cone { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center; transform: translateX(-50%) rotate(0deg); width: 120px; height: 120px; background: radial-gradient(circle at bottom, rgba(26,115,232,0.45) 0%, rgba(26,115,232,0) 70%); clip-path: polygon(50% 100%, 0 0, 100% 0); display: none; pointer-events: none; }
+.heading-cone.show { display: block; }
 
-/* プロフィール画面・掲示板 (ダークモード仕様維持) */
+/* 🌤️ 天気ボトムシート */
+.weather-bottom-sheet { position: fixed; bottom: -100%; left: 0; width: 100%; background-color: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 15px rgba(0,0,0,0.15); z-index: 2000; transition: bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1); padding: 16px 16px 80px 16px; }
+.weather-bottom-sheet.show { bottom: 0; }
+.weather-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.weather-tile.main-tile { grid-column: span 2; display: flex; align-items: center; background-color: #F8F9FA; padding: 12px; border-radius: 12px; }
+.wx-main-icon { font-size: 32px; margin-right: 16px; }
+.wx-main-info { display: flex; flex-direction: column; }
+.weather-tile { background-color: #F8F9FA; padding: 10px 12px; border-radius: 12px; display: flex; align-items: center; }
+.tile-icon { font-size: 20px; margin-right: 10px; }
+.tile-body { display: flex; flex-direction: column; }
+.tile-label { font-size: 11px; color: #70757A; margin-bottom: 2px; }
+.wx-value, .tile-value { font-size: 18px; font-weight: bold; color: #202124; }
+.wx-unit, .tile-unit { font-size: 12px; color: #70757A; margin-left: 2px; }
+.wx-label { font-size: 13px; color: #202124; font-weight: 500; }
+
+/* 🌟 天気エリア選択用のターゲットマーク ＆ 決定ボタン */
+.weather-target-mark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 100; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+.btn-weather-confirm { position: absolute; bottom: calc(155px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 100; padding: 14px 28px; background: #1A73E8; color: white; font-weight: bold; border: none; border-radius: 30px; box-shadow: 0 4px 12px rgba(26,115,232,0.4); cursor: pointer; font-size: 1.1em; display: flex; align-items: center; gap: 8px; }
+.btn-weather-confirm:active { background: #1557B0; transform: translateX(-50%) scale(0.95); }
+
+/* 👤 プロフィール・設定ページ共通 */
 .profile-page-container { padding: calc(20px + env(safe-area-inset-top)) 20px 20px 20px; background: #F8F9FA; }
 .profile-page-title { font-size: 1.1em; margin-bottom: 15px; color: #202124; font-weight: bold; }
 .profile-card { background: #FFFFFF; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; }
@@ -223,416 +172,24 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .feedback-textarea { height: 100px; background: #FFFFFF; }
 .copyright-notice { margin-top: 40px; padding: 20px; text-align: center; font-size: 0.75em; color: #70757A; line-height: 1.6; }
 .copyright-notice a { color: #1A73E8; text-decoration: none; }
+
+/* 🌟 サポート画面 (お知らせ・アコーディオン) */
+.announcement-box { background: #FFFFFF; border: 1px solid #DADCE0; border-radius: 12px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.announcement-box ul { list-style: none; padding: 0; margin: 0; }
+.announcement-box li { font-size: 0.9em; margin-bottom: 12px; color: #3C4043; line-height: 1.5; border-bottom: 1px dashed #E8EAED; padding-bottom: 12px; }
+.announcement-box li:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+.badge { display: inline-block; padding: 2px 6px; font-size: 0.75em; font-weight: bold; border-radius: 4px; margin-right: 6px; }
+.badge.new { background: #FCE8E6; color: #D93025; }
+.badge.info { background: #E8F0FE; color: #1A73E8; }
+.accordion-container { border: 1px solid #DADCE0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.accordion-header { background: #FFFFFF; color: #202124; cursor: pointer; padding: 15px; width: 100%; text-align: left; border: none; border-bottom: 1px solid #E8EAED; outline: none; font-size: 0.95em; font-weight: bold; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
+.accordion-header::after { content: '▼'; font-size: 0.8em; color: #5F6368; transition: 0.3s; }
+.accordion-header.active::after { transform: rotate(-180deg); }
+.accordion-header:last-of-type { border-bottom: none; }
+.accordion-content { padding: 0 15px; background-color: #FAFAFA; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; font-size: 0.9em; color: #5F6368; line-height: 1.6; }
+.accordion-content p { margin: 15px 0; }
+
+/* モーダル */
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: rgba(0,0,0,0.5); z-index: 3000; backdrop-filter: blur(2px); }
 .profile-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 320px; background: #FFFFFF; border-radius: 16px; padding: 24px; z-index: 3001; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
 .close-modal-btn { position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 1.5em; color: #5F6368; cursor: pointer; }
-
-.bbs-header { display: flex; align-items: center; padding: calc(15px + env(safe-area-inset-top)) 16px 15px 16px; border-bottom: 1px solid #2F3336; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 200; }
-.bbs-title { font-size: 1.2em; font-weight: 800; color: #E7E9EA; }
-.twitter-fab { position: fixed; bottom: calc(100px + env(safe-area-inset-bottom)); right: 20px; width: 56px; height: 56px; background-color: #1A73E8; color: white; border: none; border-radius: 50%; font-size: 28px; font-weight: bold; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 12px rgba(26,115,232,0.4); cursor: pointer; z-index: 250; }
-.bbs-compose-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: #000000; color: #E7E9EA; z-index: 2000; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top); }
-.bbs-compose-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; }
-.bbs-compose-cancel { background: none; border: none; color: #EFF3F4; font-size: 1em; cursor: pointer; }
-.bbs-compose-body { display: flex; padding: 16px; gap: 12px; flex: 1; }
-.twitter-post-btn { background-color: #1A73E8; color: #FFFFFF; border: none; padding: 6px 16px; font-weight: bold; border-radius: 9999px; cursor: pointer; }
-#bbsTextInput { width: 100%; border: none; background: transparent; color: #E7E9EA; font-size: 1.1em; outline: none; min-height: 80px; }
-.bbs-compose-image { width: 100%; max-height: 200px; object-fit: contain; background: #16181C; border-radius: 12px; margin: 0 auto; display: block; }
-.bbs-actions-bar { margin-top: 10px; border-top: 1px solid #2F3336; padding-top: 12px; }
-.bbs-media-buttons { display: flex; gap: 15px; color: #1A73E8; font-size: 1.3em; }
-.bbs-timeline { display: flex; flex-direction: column; padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
-.bbs-card { display: flex; padding: 14px 16px; border-bottom: 1px solid #2F3336; gap: 12px; background: #000000; }
-.bbs-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4em; flex-shrink: 0; }
-.twitter-avatar-mock { width: 44px; height: 44px; background-color: #333639; border-radius: 50%; }
-.bbs-card-content { flex: 1; overflow: hidden; }
-.bbs-user-name { font-weight: 700; color: #E7E9EA; font-size: 0.95em; }
-.bbs-time-stamp { color: #71767B; font-size: 0.9em; margin-left: 6px; }
-.bbs-card-text { font-size: 0.95em; color: #E7E9EA; margin: 4px 0 10px 0; white-space: pre-wrap; }
-.bbs-card-image { width: 100%; max-height: 300px; object-fit: contain; background: #111111; border-radius: 14px; border: 1px solid #2F3336; margin-bottom: 10px; cursor: pointer; }
-.bbs-reactions-bar { display: flex; justify-content: space-between; max-width: 80%; }
-.bbs-reaction { display: flex; align-items: center; gap: 6px; color: #71767B; font-size: 0.85em; cursor: pointer; }
-.rx-icon { font-size: 1.3em; filter: grayscale(100%) opacity(0.7); }
-.bbs-reaction.acted .rx-icon { filter: grayscale(0%) opacity(1); }
-.bbs-reaction.acted .rx-count { color: #1A73E8; font-weight: bold; }
-.bbs-load-more-btn { margin: 16px; padding: 14px; background: #000000; border: 1px solid #2F3336; color: #1A73E8; font-weight: bold; border-radius: 12px; text-align: center; }
-
-
-
-/* ⬇️ 🌟 ファイルの最下部にこれをそのまま貼り付けます 🌟 */
-
-/* 🌟 ✕ボタンのデザイン */
-.btn-close-sheet {
-    position: absolute;
-    top: 12px;
-    right: 16px;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: #F1F3F4;
-    border: none;
-    font-size: 16px;
-    font-weight: bold;
-    color: #5F6368;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-}
-
-/* 🌟 折りたたみ（Peek）状態のアニメーションとサイズ */
-#memoBottomSheet {
-    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-/* ⬇️ .show が付いている上で、さらに .peek が付いた時の設定 */
-#memoBottomSheet.show.peek {
-    /* シート全体の高さから、上部130px（カテゴリーや時間が見えるくらい）だけを残して下にズラす */
-    transform: translateY(calc(100% - 180px)) !important;
-    overflow: hidden; /* 折りたたみ時は誤爆スクロールを禁止する */
-}
-
-/* 🌟 ✕ボタンと時間が被らないように、右側にスペースを空ける */
-.sheet-header {
-    padding-right: 48px !important; /* ✕ボタンの幅(32px)＋少しのゆとり分、右に余白を作る */
-}
-
-
-
-
-/* 🌟 複数ピン案内エリアのデザイン */
-.memo-group-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #F8F9FA;
-    padding: 8px 16px;
-    border-radius: 8px;
-    margin: 0 16px 12px 16px;
-    font-size: 0.9em;
-    color: #1A73E8;
-    font-weight: bold;
-}
-.btn-group-nav {
-    background: #E8F0FE;
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    color: #1A73E8;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.btn-group-nav:active {
-    background: #D2E3FC;
-}
-
-
-
-/* ==========================================
-   📸 画像カルーセル（横スワイプ＆ガイド）
-   ========================================== */
-.carousel-container {
-    position: relative;
-    width: 100%;
-    margin-top: 12px;
-}
-/* 横スクロール（スワイプ）の要 */
-.carousel-scroll {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory; /* ピタッと止まる設定 */
-    scroll-behavior: smooth;
-    -ms-overflow-style: none; /* スクロールバーを隠す (IE, Edge) */
-    scrollbar-width: none;    /* スクロールバーを隠す (Firefox) */
-    gap: 8px; /* 画像と画像の隙間 */
-}
-.carousel-scroll::-webkit-scrollbar {
-    display: none; /* スクロールバーを隠す (Chrome, Safari) */
-}
-.carousel-scroll img {
-    width: 100%;
-    flex-shrink: 0;
-    scroll-snap-align: center; /* 画面の中央でピタッと止まる */
-    object-fit: cover;
-    border-radius: 8px;
-    max-height: 250px;
-}
-
-/* ガイド：右上の数字 (1/3など) */
-.carousel-counter {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0, 0, 0, 0.65);
-    color: white;
-    font-size: 0.75em;
-    font-weight: bold;
-    padding: 4px 10px;
-    border-radius: 12px;
-    z-index: 2;
-    pointer-events: none; /* タップの邪魔をしな */
-}
-
-/* ガイド：下の丸ポチ */
-.carousel-dots {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    margin-top: 8px;
-}
-.carousel-dots .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #DADCE0;
-    transition: background 0.3s;
-}
-.carousel-dots .dot.active {
-    background: #1A73E8; /* 今見ている画像の丸ポチは青色になる */
-}
-
-
-/* ==========================================
-   🛠️ 3分割アクションバー
-   ========================================== */
-.sheet-action-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid #F1F3F4; /* 上に薄い線を入れる */
-}
-.action-left, .action-center, .action-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.action-left {
-    cursor: pointer;
-}
-
-/* 中央：管理ボタン (編集・削除) */
-.btn-manage {
-    background: transparent;
-    border: 1px solid #DADCE0;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.8em;
-    font-weight: bold;
-    cursor: pointer;
-    color: #5F6368;
-}
-.btn-manage.delete {
-    color: #EA4335;
-    border-color: transparent;
-    background: #FCE8E6; /* 削除は目立つように薄い赤背景 */
-}
-
-/* 右側：リアクションボタン (いいね・通報) */
-.btn-reaction {
-    background: #F1F3F4;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.85em;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    color: #3C4043;
-}
-.btn-reaction.like {
-    color: #E91E63;
-    background: #FCE4EC; /* いいねはピンク系 */
-}
-
-
-
-/* 🌟 新しく追加した管理ボタンの行（いいねの下・右寄せ） */
-.action-bottom-row {
-    display: flex;
-    justify-content: flex-end; /* 右側に寄せる */
-    gap: 12px;
-    margin-top: 16px;
-    padding-top: 12px;
-    border-top: 1px dashed #E8EAED; /* 区切り線を少し入れる */
-}
-
-/* ==========================================
-   🎯 現在地ボタンの＋バッジ
-   ========================================== */
-#geoBackBtn {
-    position: relative; /* バッジの基準位置にするため */
-}
-
-
-.geo-badge.show {
-    display: flex; /* 状態B（ズーム待機）で表示 */
-}
-
-
-/* ==========================================
-   🧭 コンパス（扇形ライト）
-   ========================================== */
-.current-location-dot {
-    width: 16px;
-    height: 16px;
-    background-color: #1A73E8;
-    border: 3px solid white;
-    border-radius: 50%;
-    box-shadow: 0 0 4px rgba(0,0,0,0.3);
-    position: relative; 
-}
-
-.heading-cone {
-    position: absolute;
-    bottom: 50%; 
-    left: 50%;
-    transform-origin: bottom center; 
-    transform: translateX(-50%) rotate(0deg); 
-    width: 120px;  /* 🌟 少し大きくして確実に見えるように */
-    height: 120px;
-    background: radial-gradient(circle at bottom, rgba(26,115,232,0.45) 0%, rgba(26,115,232,0) 70%);
-    clip-path: polygon(50% 100%, 0 0, 100% 0);
-    display: none; 
-    pointer-events: none; 
-    /* 🌟 注意: z-index は指定しない（地図の裏に隠れるバグを防ぐ） */
-}
-.heading-cone.show {
-    display: block;
-}
-
-/* ==========================================
-   📝 投稿・編集パネルのオート折りたたみ（チラ見せ）
-   ========================================== */
-#memoActionPanel {
-    transition: transform 0.3s ease-out; /* スッと動くアニメーション */
-}
-
-#memoActionPanel.peek {
-    /* 🌟 パネルの7割を下へ隠し、上部の3割をチラ見せとして残す */
-    transform: translateY(70%) !important;
-    cursor: pointer; /* タップできることを示す */
-}
-
-
-
-
-
-/* ==========================================
-   🌤️ ティッカー（下のタブメニューに隙間なくドッキング）
-   ========================================== */
-.area-info-ticker {
-    position: absolute;
-    /* 🌟 下のメニューと全く同じ呪文を設定して完璧に合わせる！ */
-    bottom: calc(80px + env(safe-area-inset-bottom)); 
-    left: 0;
-    right: 0;
-    background-color: #FFFFFF;
-    border-radius: 0;
-    border-top: 1px solid #E0E0E0;
-    box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.08);
-    z-index: 10;
-    display: flex; 
-    height: 48px;
-    overflow: hidden;
-}
-
-
-.ticker-left {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
-    cursor: pointer;
-    overflow: hidden;
-}
-
-.ticker-right {
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
-    background-color: #F8F9FA;
-    border-left: 1px solid #E0E0E0;
-    cursor: pointer;
-    font-weight: bold;
-    color: #1A73E8;
-    transition: background-color 0.2s;
-}
-.ticker-right:hover {
-    background-color: #E8F0FE;
-}
-
-/* 下から上がってくるお天気シート */
-.weather-bottom-sheet {
-    position: fixed;
-    bottom: -100%; /* 初期状態は画面外（下） */
-    left: 0;
-    width: 100%;
-    background-color: #fff;
-    border-radius: 20px 20px 0 0;
-    box-shadow: 0 -4px 15px rgba(0,0,0,0.15);
-    z-index: 2000;
-    transition: bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-    padding: 16px 16px 80px 16px; /* 下のナビゲーションバーの余白を確保 */
-}
-.weather-bottom-sheet.show {
-    bottom: 0; /* クラスが付くと下からスッと表示される */
-}
-
-.sheet-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #F0F0F0;
-}
-.sheet-header h3 {
-    margin: 0;
-    font-size: 16px;
-    color: #202124;
-}
-.close-btn {
-    background: none;
-    border: none;
-    font-size: 20px;
-    color: #5F6368;
-    cursor: pointer;
-    padding: 4px;
-}
-
-/* 7項目を綺麗に並べるグリッドレイアウト */
-.weather-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-}
-.weather-tile.main-tile {
-    grid-column: span 2;
-    display: flex;
-    align-items: center;
-    background-color: #F8F9FA;
-    padding: 12px;
-    border-radius: 12px;
-}
-.wx-main-icon { font-size: 32px; margin-right: 16px; }
-.wx-main-info { display: flex; flex-direction: column; }
-.weather-tile {
-    background-color: #F8F9FA;
-    padding: 10px 12px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-}
-.tile-icon { font-size: 20px; margin-right: 10px; }
-.tile-body { display: flex; flex-direction: column; }
-.tile-label { font-size: 11px; color: #70757A; margin-bottom: 2px; }
-.wx-value, .tile-value { font-size: 18px; font-weight: bold; color: #202124; }
-.wx-unit, .tile-unit { font-size: 12px; color: #70757A; margin-left: 2px; }
-.wx-label { font-size: 13px; color: #202124; font-weight: 500; }
