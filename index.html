@@ -17,12 +17,10 @@
     <div id="mapPage" class="page-section active-page">
         <div id="map"></div>
 
-        <!-- 🌟 天気取得用のターゲットマーク（初期非表示） -->
         <div id="weatherTargetMark" class="weather-target-mark" style="display: none;">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40" fill="#1A73E8"><path d="M12 2v4m0 12v4M2 12h4m12 0h4m-5 0a7 7 0 1 1-14 0 7 7 0 0 1 14 0z"/></svg>
         </div>
         
-        <!-- 🌟 天気取得の決定ボタン（初期非表示） -->
         <button id="btnWeatherConfirm" class="btn-weather-confirm" style="display: none;">📍 ここで決定</button>
 
         <div class="google-search-bar">
@@ -58,7 +56,6 @@
                     <div class="ticker-face ticker-back" id="tickerBack">最新の情報を取得中...</div>
                 </div>
             </div>
-            <!-- 🌟 UI改修：ニューモフィズム風天気ボタン -->
             <div class="ticker-right" id="weatherClickArea" title="天気を詳しく見る">
                 <span id="tickerWeatherSummary">☁️ --℃</span>
             </div>
@@ -66,10 +63,8 @@
 
         <div id="weatherBottomSheet" class="weather-bottom-sheet">
             <div class="sheet-header" style="flex-direction: column; align-items: flex-start; gap: 12px; position: relative;">
-                <!-- 🌟 地名表示枠を追加 -->
                 <h3 style="margin: 0;">🌤️ <span id="weatherLocationName">現在地周辺</span> の気象情報</h3>
                 <button id="btnCloseWeather" class="close-btn" style="position: absolute; right: 0; top: 0;">✕</button>
-                <!-- 🌟 別のエリアを選ぶボタン -->
                 <button id="btnSelectWeatherArea" class="btn-outline-blue" style="padding: 6px 12px; font-size: 0.85em; width: auto;">📍 別のエリアの天気を見る</button>
             </div>
             <div class="weather-grid" style="margin-top: 15px;">
@@ -122,10 +117,24 @@
                 表示フィルター
                 <button id="btnCloseFilter" style="background:none; border:none; font-size:0.9em; color:#1A73E8; font-weight:bold; cursor:pointer;">閉じる</button>
             </h3>
-            <label class="toggle-name-label" style="font-size: 1em; padding: 10px 0; border-bottom: 1px solid #E8EAED; margin-bottom: 15px;">
+            
+            <!-- 🌟 マップレイヤー表示（雨雲・渋滞） -->
+            <p style="font-size: 0.9em; font-weight:bold; color:#5F6368; margin-top: 15px; margin-bottom: 8px;">マップ表示オプション</p>
+            <div class="filter-toggles" style="margin-bottom: 20px;">
+                <label class="toggle-name-label" style="justify-content: space-between; border-bottom: 1px dashed #E8EAED; padding-bottom: 10px; margin-bottom: 10px;">
+                    <span style="color:#202124; font-weight:bold;">🌧️ 雨雲レーダー（気象庁）</span>
+                    <input type="checkbox" id="chkRainRadar">
+                </label>
+                <button id="btnCheckTraffic" class="btn-outline-blue" style="margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; color:#EA4335; border-color:#EA4335;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6zm5 4h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    周辺の渋滞を確認 (Google Maps起動)
+                </button>
+            </div>
+
+            <p style="font-size: 0.9em; font-weight:bold; color:#5F6368; margin-bottom: 8px;">メモの表示設定</p>
+            <label class="toggle-name-label" style="font-size: 1em; padding-bottom: 15px; border-bottom: 1px solid #E8EAED; margin-bottom: 15px;">
                 <input type="checkbox" id="chkShowMineOnly"><span style="color:#1A73E8; font-weight:bold;">自分のメモだけを表示</span>
             </label>
-            <p style="font-size: 0.9em; font-weight:bold; color:#5F6368; margin-bottom: 8px;">カテゴリ絞り込み</p>
             <div class="category-selector" id="filterCategoryContainer"></div>
         </div>
 
@@ -158,21 +167,38 @@
                         <button id="btnReportMemo" class="btn-reaction report">⚠️ <span id="sheetReportCount">0</span></button>
                     </div>
                 </div>
-                <div id="sheetManageButtons" class="action-bottom-row" style="display: none;">
-                    <button id="btnEditMemo" class="btn-manage edit">✏️ 編集</button>
-                    <button id="btnDeleteMemo" class="btn-manage delete">🗑️ 削除</button>
+
+                <!-- 🌟 左端にナビボタン、右端に編集・削除ボタン -->
+                <div class="action-bottom-row">
+                    <div class="action-left-bottom">
+                        <button id="btnNavHere" class="btn-manage nav">🚗 ここへ移動</button>
+                    </div>
+                    <div id="sheetManageButtons" class="action-right-bottom" style="display: none; gap: 8px;">
+                        <button id="btnEditMemo" class="btn-manage edit">✏️ 編集</button>
+                        <button id="btnDeleteMemo" class="btn-manage delete">🗑️ 削除</button>
+                    </div>
                 </div>
+
             </div>
         </div>
+
+        <!-- 🌟 Google風のおしゃれな「メモありがとう」ポップアップ -->
+        <div id="materialToast" class="material-toast">
+            <div class="toast-icon">✨</div>
+            <div class="toast-text">
+                メモありがとう！<br>
+                <span style="font-size: 0.85em; font-weight: normal; opacity: 0.9;">マップに登録されました</span>
+            </div>
+        </div>
+
     </div>
 
-    <!-- 🌟 サポート・設定画面（左タブ） -->
     <div id="supportPage" class="page-section profile-page-container" style="display: none;">
         <h2 class="profile-page-title">お知らせ</h2>
         <div class="announcement-box">
             <ul>
-                <li><span class="badge new">NEW</span> <b>2026/07/06</b><br>現在地ボタンが3段階シフトに進化しました！ロック中は画面を動かしても方向が追従します。</li>
-                <li><span class="badge info">INFO</span> <b>2026/07/05</b><br>ワンタップ現在地メモが爆速になりました。保存後のアニメーションも追加しています。</li>
+                <li><span class="badge new">NEW</span> <b>2026/07/06</b><br>雨雲レーダーと周辺の渋滞確認機能（フィルター内）、および「ここへ移動（ナビ起動）」を追加しました！</li>
+                <li><span class="badge info">INFO</span> <b>2026/07/06</b><br>現在地ボタンが3段階シフトに進化しました。ロック中は画面を動かしても方向が追従します。</li>
             </ul>
         </div>
 
@@ -180,12 +206,10 @@
         <div class="accordion-container">
             <button class="accordion-header">❓ 現在地ボタンが「扇マーク」に変わったのは何？</button>
             <div class="accordion-content"><p>現在地ボタンは「通常 ➔ 扇待機 ➔ 扇起動(ロック)」の3段階に進化しました。青い扇マークが出ている時は、スマホの向きに合わせて進行方向を照らします。ロック中は地図を動かしても扇が消えません！</p></div>
-            
             <button class="accordion-header">❓ ワンタップで今いる場所にメモを残すには？</button>
             <div class="accordion-content"><p>画面右上の「鉛筆マーク」を押すと、一瞬で現在地にズームしてメモ作成画面が開きます！</p></div>
-            
-            <button class="accordion-header">❓ 地図を動かしたときにメモ画面が引っ込むんだけど？</button>
-            <div class="accordion-content"><p>地図を広く見渡せるように、ドラッグするとメモが一時的に下へ「チラ見せ」状態になります。再度メモ部分をタップすると元に戻ります。</p></div>
+            <button class="accordion-header">❓ 渋滞や雨雲を見るには？</button>
+            <div class="accordion-content"><p>漏斗（フィルター）マークを押し、雨雲レーダーのスイッチを入れると気象庁のリアルタイム雨雲が重なります。「渋滞を確認」を押すと、Google Mapsアプリが渋滞表示モードで自動起動します。</p></div>
         </div>
 
         <hr class="menu-divider" style="margin:25px 0;">
@@ -195,7 +219,6 @@
         <div style="height: 100px;"></div>
     </div>
 
-    <!-- プロフィール画面（右タブ） -->
     <div id="profilePage" class="page-section profile-page-container" style="display: none;">
         <h2 class="profile-page-title">アカウント設定</h2>
         <div id="profileReadMode">
@@ -230,7 +253,6 @@
         <div style="height: 100px;"></div>
     </div>
 
-    <!-- ボトムナビゲーション -->
     <nav class="bottom-nav">
         <button id="tabSupport" class="nav-tab">
             <div class="nav-icon-container"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></svg></div>
@@ -246,7 +268,6 @@
         </button>
     </nav>
 
-    <!-- プロフィール用モーダル -->
     <div id="profileModalOverlay" class="modal-overlay"></div>
     <div id="profileModal" class="profile-modal">
         <button id="closeModalBtn" class="close-modal-btn">×</button>

@@ -36,36 +36,13 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100dvh; font-family: "G
 .sharp-temp-pin { width: 28px; height: 40px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36"><path fill="%23EA4335" d="M12 0C5.37 0 0 5.37 0 12c0 9 12 24 12 24s12-15 12-24c0-6.63-5.37-12-12-12zm0 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center bottom; filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.3)); animation: dropBounce 0.35s ease-out; }
 @keyframes dropBounce { 0% { transform: translateY(-25px); opacity: 0; } 60% { transform: translateY(0); opacity: 1; } 80% { transform: translateY(-4px); } 100% { transform: translateY(0); } }
 
-/* 🌟 メモ保存時のバウンドアニメーションピン */
-.success-bounce-pin { width: 24px; height: 24px; background-color: #06C167; border: 3px solid #FFFFFF; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); animation: doubleBounce 0.6s ease-out forwards; }
-@keyframes doubleBounce { 0% { transform: translateY(0); opacity: 0; } 20% { transform: translateY(-20px); opacity: 1; } 40% { transform: translateY(0); } 60% { transform: translateY(-10px); } 80% { transform: translateY(0); } 90% { transform: translateY(-4px); } 100% { transform: translateY(0); opacity: 1; } }
-
 /* 📻 エリア注目情報 (3D回転ティッカー) */
 .area-info-ticker { position: absolute; bottom: calc(80px + env(safe-area-inset-bottom)); left: 0; right: 0; height: 56px; background: #FFFFFF; border-radius: 40px 40px 0 0 !important; box-shadow: 0 -4px 16px rgba(0,0,0,0.1) !important; border-top: none !important; display: flex; align-items: center; z-index: 10; padding-top: 8px; }
 .ticker-left { flex: 1; padding: 0 0 0 24px !important; height: 100%; perspective: 1000px; display: flex; align-items: center; cursor: pointer; overflow: hidden; }
 
-/* 🌟 UI改修：ニューモフィズム風の天気ボタン */
-.ticker-right { 
-    border-left: none; /* ダサい縦線を削除 */
-    margin: 8px 16px 8px 8px; /* カード内に収めるマージン */
-    padding: 0 16px !important; 
-    border-radius: 12px; /* 丸みを持たせる */
-    background: #FFFFFF; /* 背景を白に統一 */
-    box-shadow: 3px 3px 6px #E8EAED, -3px -3px 6px #FFFFFF; /* 浮き出し（ニューモフィズム）の影 */
-    font-size: 0.85em; 
-    font-weight: bold; 
-    color: #5F6368; 
-    display: flex; 
-    align-items: center; 
-    height: 70%; 
-    flex-shrink: 0; 
-    transition: all 0.2s ease; 
-    cursor: pointer;
-}
-.ticker-right:active { 
-    /* 押した時に凹むアニメーション */
-    box-shadow: inset 2px 2px 4px #E8EAED, inset -2px -2px 4px #FFFFFF; 
-}
+/* 🌟 ニューモフィズム風の天気ボタン */
+.ticker-right { border-left: none; margin: 8px 16px 8px 8px; padding: 0 16px !important; border-radius: 12px; background: #FFFFFF; box-shadow: 3px 3px 6px #E8EAED, -3px -3px 6px #FFFFFF; font-size: 0.85em; font-weight: bold; color: #5F6368; display: flex; align-items: center; height: 70%; flex-shrink: 0; transition: all 0.2s ease; cursor: pointer; }
+.ticker-right:active { box-shadow: inset 2px 2px 4px #E8EAED, inset -2px -2px 4px #FFFFFF; }
 
 .ticker-content { position: relative; width: 100%; height: 20px; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
 .ticker-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.0em; font-weight: bold; display: flex; align-items: center; color: #3C4043; }
@@ -96,7 +73,7 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .toggle-name-label { display: flex; align-items: center; gap: 10px; font-size: 0.85em; color: #5F6368; margin-top: 10px; cursor: pointer; }
 .toggle-name-label input { accent-color: #1A73E8; width: 18px; height: 18px; }
 
-/* 📝 オート折りたたみ（チラ見せ） */
+/* 📝 オート折りたたみ */
 #memoActionPanel, #memoBottomSheet { transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 #memoActionPanel.peek { transform: translateY(70%) !important; cursor: pointer; }
 #memoBottomSheet.show.peek { transform: translateY(calc(100% - 180px)) !important; overflow: hidden; }
@@ -110,7 +87,6 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 
 .memo-group-nav { display: flex; justify-content: space-between; align-items: center; background: #F8F9FA; padding: 8px 16px; border-radius: 8px; margin: 0 16px 12px 16px; font-size: 0.9em; color: #1A73E8; font-weight: bold; }
 .btn-group-nav { background: #E8F0FE; border: none; width: 32px; height: 32px; border-radius: 50%; color: #1A73E8; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.btn-group-nav:active { background: #D2E3FC; }
 
 /* 画像カルーセル */
 #sheetImageContainer { width: 100%; height: 200px; background: #F1F3F4; border-radius: 8px; margin: 12px 0; display: none; align-items: center; justify-content: center; overflow: hidden; }
@@ -132,7 +108,13 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .btn-manage.delete { color: #EA4335; border-color: transparent; background: #FCE8E6; }
 .btn-reaction { background: #F1F3F4; border: none; padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #3C4043; }
 .btn-reaction.like { color: #E91E63; background: #FCE4EC; }
-.action-bottom-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px; padding-top: 12px; border-top: 1px dashed #E8EAED; }
+
+/* 🌟 ここへ移動ボタンと編集削除のレイアウト（左右配置） */
+.action-bottom-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 12px; border-top: 1px dashed #E8EAED; }
+.action-left-bottom { display: flex; }
+.action-right-bottom { display: flex; gap: 8px; }
+.btn-manage.nav { color: #1A73E8; border-color: #1A73E8; background: #E8F0FE; display: flex; align-items: center; gap: 4px; }
+.btn-manage.nav:active { background: #D2E3FC; }
 
 /* 🧭 コンパス（扇形ライト） */
 #geoBackBtn { position: relative; }
@@ -159,6 +141,11 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .btn-weather-confirm { position: absolute; bottom: calc(155px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 100; padding: 14px 28px; background: #1A73E8; color: white; font-weight: bold; border: none; border-radius: 30px; box-shadow: 0 4px 12px rgba(26,115,232,0.4); cursor: pointer; font-size: 1.1em; display: flex; align-items: center; gap: 8px; }
 .btn-weather-confirm:active { background: #1557B0; transform: translateX(-50%) scale(0.95); }
 
+/* 🌟 Google風 Snackbar (トースト) アニメーション */
+.material-toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: #323232; color: #FFFFFF; padding: 14px 24px; border-radius: 24px; display: flex; align-items: center; gap: 12px; font-size: 0.95em; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 5000; transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
+.material-toast.show { bottom: calc(90px + env(safe-area-inset-bottom)); }
+.toast-icon { font-size: 1.4em; line-height: 1; }
+
 /* 👤 プロフィール・設定ページ共通 */
 .profile-page-container { padding: calc(20px + env(safe-area-inset-top)) 20px 20px 20px; background: #F8F9FA; }
 .profile-page-title { font-size: 1.1em; margin-bottom: 15px; color: #202124; font-weight: bold; }
@@ -173,7 +160,7 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .copyright-notice { margin-top: 40px; padding: 20px; text-align: center; font-size: 0.75em; color: #70757A; line-height: 1.6; }
 .copyright-notice a { color: #1A73E8; text-decoration: none; }
 
-/* 🌟 サポート画面 (お知らせ・アコーディオン) */
+/* サポート画面 (お知らせ・アコーディオン) */
 .announcement-box { background: #FFFFFF; border: 1px solid #DADCE0; border-radius: 12px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 .announcement-box ul { list-style: none; padding: 0; margin: 0; }
 .announcement-box li { font-size: 0.9em; margin-bottom: 12px; color: #3C4043; line-height: 1.5; border-bottom: 1px dashed #E8EAED; padding-bottom: 12px; }
