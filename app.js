@@ -32,6 +32,10 @@ let targetLngLat = null;
 let geoMode = 'A'; 
 let geoZoomTimer = null;
 
+// 🌟 🆕 爆速GPS追跡用変数
+let currentWatchCoords = null;
+let watchPositionId = null;
+
 let currentGroupMemos = [];
 let currentGroupIndex = 0;
 
@@ -72,6 +76,20 @@ function updateCurrentLocation(coords) {
     }
 }
 
+// 🌟 🆕 バックグラウンドGPSトラッキング
+function startLocationTracking() {
+    if (navigator.geolocation) {
+        watchPositionId = navigator.geolocation.watchPosition(
+            (pos) => {
+                currentWatchCoords = [pos.coords.longitude, pos.coords.latitude];
+                updateCurrentLocation(currentWatchCoords);
+            },
+            (err) => { console.error("GPSエラー:", err); },
+            { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+        );
+    }
+}
+
 function setGeoMode(mode) {
     geoMode = mode;
     const iconTarget = document.getElementById('geoIconTarget'); const iconCompass = document.getElementById('geoIconCompass'); let cone = document.getElementById('headingCone');
@@ -84,12 +102,20 @@ function setGeoMode(mode) {
 }
 
 function jumpToCurrentLocation() {
-    navigator.geolocation.getCurrentPosition(pos => {
-        const coords = [pos.coords.longitude, pos.coords.latitude];
-        map.flyTo({ center: coords, zoom: 16, duration: 800 });
-        updateCurrentLocation(coords); fetchWeatherData(pos.coords.latitude, pos.coords.longitude, false);
+    // 🌟 キャッシュがあればゼロ秒で移動
+    if (currentWatchCoords) {
+        map.flyTo({ center: currentWatchCoords, zoom: 16, duration: 800 });
+        fetchWeatherData(currentWatchCoords[1], currentWatchCoords[0], false);
         clearTimeout(geoZoomTimer); geoZoomTimer = setTimeout(() => { setGeoMode('B'); }, 850);
-    });
+    } else {
+        navigator.geolocation.getCurrentPosition(pos => {
+            const coords = [pos.coords.longitude, pos.coords.latitude];
+            currentWatchCoords = coords;
+            map.flyTo({ center: coords, zoom: 16, duration: 800 });
+            updateCurrentLocation(coords); fetchWeatherData(pos.coords.latitude, pos.coords.longitude, false);
+            clearTimeout(geoZoomTimer); geoZoomTimer = setTimeout(() => { setGeoMode('B'); }, 850);
+        });
+    }
 }
 
 async function startCompass() { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') { try { const permission = await DeviceOrientationEvent.requestPermission(); if (permission !== 'granted') return; } catch (e) { console.error(e); } } window.addEventListener('deviceorientationabsolute', handleOrientation, true); window.addEventListener('deviceorientation', handleOrientation, true); }
@@ -107,6 +133,7 @@ const map = new maplibregl.Map({
 });
 
 map.on('load', () => {
+    startLocationTracking(); // 🌟 裏側で常にGPSキャッシュを作り続ける
     jumpToCurrentLocation();
     map.addSource('memos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
 
@@ -151,9 +178,75 @@ map.on('load', () => {
     loadMemosToMap();
 });
 
+// ==========================================
+// 🔍 🌟 新検索：Nominatim (サジェスト付き無料エンジン)
+// ==========================================
 const searchInput = document.getElementById('addressSearchInput');
-const execSearch = async () => { const q = searchInput.value.trim(); if (!q) return; try { const res = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(q)}.json?key=${MAPTILER_KEY}&bbox=139.6,35.5,140.0,35.9`); const data = await res.json(); if (data.features && data.features.length > 0) { map.flyTo({ center: data.features[0].center, zoom: 16 }); searchInput.blur(); } else alert("見つかりませんでした"); } catch (e) {} };
-searchInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') execSearch(); });
+const searchSuggestions = document.getElementById('searchSuggestions');
+let searchTimeout = null;
+
+// Nominatimの住所を日本風に整える関数
+function formatJapaneseAddress(displayName) {
+    return displayName.split(', ').reverse().join(' ').replace(/日本/g, '').replace(/〒\d{3}-\d{4}/g, '').trim();
+}
+
+if (searchInput && searchSuggestions) {
+    searchInput.addEventListener('input', (e) => {
+        const q = e.target.value.trim();
+        clearTimeout(searchTimeout);
+        if (!q) { searchSuggestions.style.display = 'none'; return; }
+        
+        searchTimeout = setTimeout(async () => {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=jp&addressdetails=1&limit=5`);
+                const data = await res.json();
+                
+                searchSuggestions.innerHTML = '';
+                if (data.length > 0) {
+                    data.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'suggestion-item';
+                        const formattedAddress = formatJapaneseAddress(item.display_name);
+                        const nameHtml = item.name ? `<strong>${item.name}</strong><br><span style="font-size:0.8em;color:#5F6368;">${formattedAddress}</span>` : formattedAddress;
+                        
+                        div.innerHTML = `<span class="suggestion-icon">📍</span><div style="line-height:1.4;">${nameHtml}</div>`;
+                        div.onclick = () => {
+                            map.flyTo({ center: [parseFloat(item.lon), parseFloat(item.lat)], zoom: 16 });
+                            searchInput.value = item.name ? item.name : formattedAddress.split(' ')[0];
+                            searchSuggestions.style.display = 'none';
+                            searchInput.blur();
+                        };
+                        searchSuggestions.appendChild(div);
+                    });
+                    searchSuggestions.style.display = 'block';
+                } else {
+                    searchSuggestions.style.display = 'none';
+                }
+            } catch(err) { console.error("検索エラー:", err); }
+        }, 500); 
+    });
+
+    searchInput.addEventListener('keypress', async (e) => { 
+        if(e.key === 'Enter') {
+            const q = searchInput.value.trim(); if (!q) return;
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=jp&limit=1`);
+                const data = await res.json();
+                if(data.length > 0) {
+                    map.flyTo({ center: [parseFloat(data[0].lon), parseFloat(data[0].lat)], zoom: 16 });
+                    searchSuggestions.style.display = 'none';
+                    searchInput.blur();
+                } else { alert("見つかりませんでした"); }
+            } catch (err) {}
+        } 
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+            searchSuggestions.style.display = 'none';
+        }
+    });
+}
 
 const geoBackBtn = document.getElementById('geoBackBtn');
 if (geoBackBtn) { geoBackBtn.addEventListener('click', () => { if (geoMode === 'A') { jumpToCurrentLocation(); } else if (geoMode === 'B') { map.flyTo({ zoom: 20, duration: 800 }); setGeoMode('C'); } else if (geoMode === 'C') { setGeoMode('B'); } }); }
@@ -161,8 +254,11 @@ if (geoBackBtn) { geoBackBtn.addEventListener('click', () => { if (geoMode === '
 const btnQuickMemo = document.getElementById('btnQuickMemo');
 if (btnQuickMemo) {
     btnQuickMemo.addEventListener('click', () => {
-        if (currentLocationMarker) {
-            const ll = currentLocationMarker.getLngLat(); const coords = [ll.lng, ll.lat]; map.flyTo({ center: coords, zoom: 20, duration: 800 }); updateCurrentLocation(coords); setTimeout(() => { map.fire('contextmenu', { lngLat: { lng: coords[0], lat: coords[1] } }); }, 850);
+        // 🌟 待機時間0.0秒で直ちにメモ画面を開く
+        const coords = currentWatchCoords || (currentLocationMarker ? [currentLocationMarker.getLngLat().lng, currentLocationMarker.getLngLat().lat] : null);
+        if (coords) {
+            map.flyTo({ center: coords, zoom: 20, duration: 800 });
+            setTimeout(() => { map.fire('contextmenu', { lngLat: { lng: coords[0], lat: coords[1] } }); }, 0);
         } else { alert("現在地を読み込み中です。数秒後にもう一度お試しください。"); }
     });
 }
@@ -280,10 +376,10 @@ document.getElementById('btnSaveMemo').addEventListener('click', async () => {
         
         closeMemoForm(); await loadMemosToMap();
 
-        // 🌟 Google風 Snackbar トーストを表示
+        // 🌟 Google風 Snackbar トーストを表示 (案A)
         const toast = document.getElementById('materialToast');
         toast.classList.add('show');
-        setTimeout(() => { toast.classList.remove('show'); }, 3500); // 3.5秒後に自動で消える
+        setTimeout(() => { toast.classList.remove('show'); }, 3500); // 3.5秒後にフワッと消える
 
     } catch (e) { alert("エラーが発生しました"); } finally { saveBtn.disabled = false; saveBtn.textContent = "投稿する"; }
 });
@@ -338,7 +434,6 @@ function openMemoBottomSheet(props) {
     const btnNavHere = document.getElementById('btnNavHere');
     if (btnNavHere) {
         btnNavHere.onclick = () => {
-            // Google Mapsアプリ（ナビゲーション）を直接起動
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${fullData.lat},${fullData.lng}`, '_blank');
         };
     }
