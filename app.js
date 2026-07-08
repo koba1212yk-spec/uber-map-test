@@ -39,11 +39,23 @@ let watchPositionId = null;
 let currentGroupMemos = [];
 let currentGroupIndex = 0;
 
-let filterState = { showMineOnly: false, categories: ['🏢 建物・入口', '🅿️ 駐輪スポット', '⚠️ 注意・取締り', '🚻 トイレ・公園', '💡 その他'] };
+let filterState = { showMineOnly: false, categories: ['🏢 建物・入口', '🅿️ 駐輪スポット', '⚠️ 注意・取締り', '🚻 ト ময়・公園', '💡 その他'] };
 let allMemosData = []; 
 let latestMemos = [];
 let tickerIndex = 0;
 let isTickerFlipped = false;
+
+// 🌟 🆕 HTMLマーカー描画・管理用
+let markersOnScreen = {};
+const catIconPaths = {
+    '🏢 建物・入口': '<path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>',
+    '🅿️ 駐輪スポット': '<path d="M13.2 11H10v2h3.2c1.1 0 2-.9 2-2s-.9-2-2-2zM8 4h5.2c2.21 0 4 1.79 4 4s-1.79 4-4 4H10v8H8V4z"/>',
+    '⚠️ 注意・取締り': '<path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>',
+    '🚻 トイレ・公園': '<path d="M20.5 6c-2.61.7-5.67 1-8.5 1s-5.89-.3-8.5-1L3 8c1.86.5 4 .83 6 1v13h2v-6h2v6h2V9c2-.17 4.14-.5 6-1l-.5-2zM12 6c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/>',
+    '💡 その他': '<path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/>'
+};
+const catColors = { '🏢 建物・入口': '#1A73E8', '🅿️ 駐輪スポット': '#34A853', '⚠️ 注意・取締り': '#EA4335', '🚻 トイレ・公園': '#FBBC04', '💡 その他': '#9AA0A6' };
+
 
 localStorage.setItem('deliMapActiveTab', 'tabMap');
 
@@ -76,13 +88,28 @@ function updateCurrentLocation(coords) {
     }
 }
 
-// 🌟 🆕 バックグラウンドGPSトラッキング
+// 🌟 🆕 バックグラウンドGPSトラッキング＆未取得時のカバー（案B）
 function startLocationTracking() {
     if (navigator.geolocation) {
         watchPositionId = navigator.geolocation.watchPosition(
             (pos) => {
                 currentWatchCoords = [pos.coords.longitude, pos.coords.latitude];
                 updateCurrentLocation(currentWatchCoords);
+                
+                // 🌟 案B: GPS未取得のままメモ画面を開いて文字を打っている最中に、GPSが取れたら自動でピンを刺してズーム
+                const actionPanel = document.getElementById('memoActionPanel');
+                if (actionPanel && actionPanel.classList.contains('show') && !targetLngLat && !editingMemoId) {
+                    targetLngLat = { lng: currentWatchCoords[0], lat: currentWatchCoords[1] };
+                    if (tempPinMarker) tempPinMarker.remove();
+                    
+                    const wrapper = document.createElement('div'); wrapper.className = 'marker-wrapper';
+                    const pin = document.createElement('div'); pin.className = 'sharp-temp-pin pop-animation'; 
+                    wrapper.appendChild(pin);
+                    
+                    tempPinMarker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat(targetLngLat).addTo(map);
+                    map.flyTo({ center: targetLngLat, zoom: 20, padding: { top: 90, bottom: 450, left: 0, right: 0 }, duration: 800 });
+                    document.getElementById('memoTextInput').placeholder = "タワマンの入り口は裏手です、等";
+                }
             },
             (err) => { console.error("GPSエラー:", err); },
             { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
@@ -102,7 +129,6 @@ function setGeoMode(mode) {
 }
 
 function jumpToCurrentLocation() {
-    // 🌟 キャッシュがあればゼロ秒で移動
     if (currentWatchCoords) {
         map.flyTo({ center: currentWatchCoords, zoom: 16, duration: 800 });
         fetchWeatherData(currentWatchCoords[1], currentWatchCoords[0], false);
@@ -133,30 +159,13 @@ const map = new maplibregl.Map({
 });
 
 map.on('load', () => {
-    startLocationTracking(); // 🌟 裏側で常にGPSキャッシュを作り続ける
+    startLocationTracking();
     jumpToCurrentLocation();
+    
+    // 🌟 クラスター（数字の塊）はそのまま維持、バラけたピンはHTMLマーカーで描画
     map.addSource('memos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
-
-    const catIcons = {
-        'icon-building': '<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="%23FFFFFF"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>',
-        'icon-parking': '<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="%23FFFFFF"><path d="M13.2 11H10v2h3.2c1.1 0 2-.9 2-2s-.9-2-2-2zM8 4h5.2c2.21 0 4 1.79 4 4s-1.79 4-4 4H10v8H8V4z"/></svg>',
-        'icon-warning': '<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="%23FFFFFF"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>',
-        'icon-restroom': '<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="%23FFFFFF"><path d="M20.5 6c-2.61.7-5.67 1-8.5 1s-5.89-.3-8.5-1L3 8c1.86.5 4 .83 6 1v13h2v-6h2v6h2V9c2-.17 4.14-.5 6-1l-.5-2zM12 6c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>',
-        'icon-info': '<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="%23FFFFFF"><path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/></svg>'
-    };
-    Object.keys(catIcons).forEach(key => { const img = new Image(); img.onload = () => map.addImage(key, img); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(catIcons[key]); });
-
     map.addLayer({ id: 'clusters', type: 'circle', source: 'memos', filter: ['has', 'point_count'], paint: { 'circle-color': '#06C167', 'circle-radius': 18, 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
     map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'memos', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 14, 'text-font': ['Noto Sans Bold'] }, paint: { 'text-color': '#ffffff' } });
-    map.addLayer({ id: 'unclustered-point', type: 'circle', source: 'memos', filter: ['!', ['has', 'point_count']], paint: { 'circle-opacity': ['get', 'opacity'], 'circle-color': [ 'case', ['get', 'isSelected'], [ 'match', ['get', 'category'], '🏢 建物・入口', '#1A73E8', '🅿️ 駐輪スポット', '#34A853', '⚠️ 注意・取締り', '#EA4335', '🚻 トイレ・公園', '#FBBC04', '#9AA0A6' ], '#FFFFFF' ], 'circle-radius': 16, 'circle-stroke-width': 3, 'circle-stroke-color': [ 'match', ['get', 'category'], '🏢 建物・入口', '#1A73E8', '🅿️ 駐輪スポット', '#34A853', '⚠️ 注意・取締り', '#EA4335', '🚻 トイレ・公園', '#FBBC04', '#9AA0A6' ] } });
-    map.addLayer({ id: 'unclustered-icon', type: 'symbol', source: 'memos', filter: ['!', ['has', 'point_count']], layout: { 'icon-image': ['get', 'iconName'], 'icon-size': 0.7, 'icon-allow-overlap': true }, paint: { 'icon-opacity': ['get', 'opacity'], 'icon-color': [ 'case', ['get', 'isSelected'], '#FFFFFF', [ 'match', ['get', 'category'], '🏢 建物・入口', '#1A73E8', '🅿️ 駐輪スポット', '#34A853', '⚠️ 注意・取締り', '#EA4335', '🚻 トイレ・公園', '#FBBC04', '#9AA0A6' ] ] } });
-
-    map.on('click', 'unclustered-point', (e) => {
-        const bbox = [ [e.point.x - 20, e.point.y - 20], [e.point.x + 20, e.point.y + 20] ]; const features = map.queryRenderedFeatures(bbox, { layers: ['unclustered-point'] });
-        const uniqueIds = new Set(); currentGroupMemos = [];
-        features.forEach(f => { if (!uniqueIds.has(f.properties.id)) { uniqueIds.add(f.properties.id); currentGroupMemos.push(f.properties); } });
-        currentGroupIndex = 0; showCurrentGroupMemo();
-    });
 
     map.on('click', 'clusters', (e) => {
         const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
@@ -164,28 +173,95 @@ map.on('load', () => {
     });
 
     map.on('click', (e) => {
-        const features = map.queryRenderedFeatures(e.point, { layers: ['unclustered-point', 'unclustered-icon', 'clusters'] });
+        const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+        // HTMLマーカーをクリックした時はイベントがブロックされるため、ここは空の場所をタップした時の処理
         if (!features.length) {
             const sheet = document.getElementById('memoBottomSheet'); if (sheet.classList.contains('show')) sheet.classList.add('peek');
             document.getElementById('memoActionPanel').classList.remove('show'); document.getElementById('filterBottomSheet').classList.remove('show');
-            if (tempPinMarker) tempPinMarker.remove(); 
+            if (tempPinMarker) { tempPinMarker.remove(); tempPinMarker = null; }
         }
     });
 
-    let touchTimer; map.on('touchstart', (e) => { if (e.originalEvent.touches.length > 1) return; touchTimer = setTimeout(() => { openMemoAddSheet(e.lngLat); }, 500); });
-    map.on('touchmove', () => clearTimeout(touchTimer)); map.on('touchend', () => clearTimeout(touchTimer)); map.on('contextmenu', (e) => { openMemoAddSheet(e.lngLat); });
+    let touchTimer; map.on('touchstart', (e) => { if (e.originalEvent.touches.length > 1) return; touchTimer = setTimeout(() => { openMemoAddSheet(e.lngLat, false); }, 500); });
+    map.on('touchmove', () => clearTimeout(touchTimer)); map.on('touchend', () => clearTimeout(touchTimer)); map.on('contextmenu', (e) => { openMemoAddSheet(e.lngLat, false); });
 
     loadMemosToMap();
 });
 
+// 🌟 🆕 HTMLマーカーへの変換 ＆ 左上バグの完全修正（外箱の分離）
+function updateMarkers() {
+    if (!map.getSource('memos')) return;
+    const newMarkers = {};
+    const features = map.querySourceFeatures('memos');
+    
+    for (const feature of features) {
+        if (!feature.properties.cluster) {
+            const id = feature.properties.id;
+            const coords = feature.geometry.coordinates;
+            
+            if (!markersOnScreen[id]) {
+                const isSelected = feature.properties.isSelected;
+                const cat = feature.properties.category || '💡 その他';
+                const bgColor = isSelected ? '#FFFFFF' : catColors[cat];
+                const iconColor = isSelected ? catColors[cat] : '#FFFFFF';
+                
+                // 🌟 バグ修正: MapLibreが座標を動かすための「外箱」
+                const wrapper = document.createElement('div');
+                wrapper.className = 'marker-wrapper';
+
+                // 🌟 アニメーションして色が変わる「ピン本体（内箱）」
+                const el = document.createElement('div');
+                el.className = `custom-memo-marker pop-animation ${isSelected ? 'selected' : ''}`;
+                el.style.backgroundColor = bgColor;
+                el.style.borderColor = catColors[cat];
+                el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="${iconColor}">${catIconPaths[cat]}</svg>`;
+                
+                // 箱を合体してマップに配置
+                wrapper.appendChild(el);
+                const marker = new maplibregl.Marker({element: wrapper}).setLngLat(coords).addTo(map);
+                
+                // タップ処理はピン本体に設定
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const currentFeatures = map.querySourceFeatures('memos').filter(f => !f.properties.cluster);
+                    const clickedMemos = currentFeatures.filter(f => Math.abs(f.geometry.coordinates[0] - coords[0]) < 0.0001 && Math.abs(f.geometry.coordinates[1] - coords[1]) < 0.0001);
+                    const uniqueIds = new Set(); currentGroupMemos = [];
+                    clickedMemos.forEach(f => { if (!uniqueIds.has(f.properties.id)) { uniqueIds.add(f.properties.id); currentGroupMemos.push(f.properties); } });
+                    currentGroupIndex = 0; showCurrentGroupMemo();
+                });
+                
+                markersOnScreen[id] = { marker: marker, el: el };
+            } else {
+                const markerObj = markersOnScreen[id];
+                const el = markerObj.el;
+                const isSelected = feature.properties.isSelected;
+                const cat = feature.properties.category || '💡 その他';
+                
+                // 色や選択状態の更新
+                if (isSelected && !el.classList.contains('selected')) {
+                    el.classList.add('selected'); el.style.backgroundColor = '#FFFFFF'; el.querySelector('svg').setAttribute('fill', catColors[cat]);
+                } else if (!isSelected && el.classList.contains('selected')) {
+                    el.classList.remove('selected'); el.style.backgroundColor = catColors[cat]; el.querySelector('svg').setAttribute('fill', '#FFFFFF');
+                }
+                markerObj.marker.setLngLat(coords); 
+            }
+            newMarkers[id] = markersOnScreen[id];
+        }
+    }
+    for (const id in markersOnScreen) {
+        if (!newMarkers[id]) { markersOnScreen[id].marker.remove(); delete markersOnScreen[id]; }
+    }
+}
+map.on('render', updateMarkers);
+
+
 // ==========================================
-// 🔍 🌟 新検索：Nominatim (サジェスト付き無料エンジン)
+// 🔍 🌟 Nominatim (サジェスト付き無料検索エンジン)
 // ==========================================
 const searchInput = document.getElementById('addressSearchInput');
 const searchSuggestions = document.getElementById('searchSuggestions');
 let searchTimeout = null;
 
-// Nominatimの住所を日本風に整える関数
 function formatJapaneseAddress(displayName) {
     return displayName.split(', ').reverse().join(' ').replace(/日本/g, '').replace(/〒\d{3}-\d{4}/g, '').trim();
 }
@@ -204,8 +280,7 @@ if (searchInput && searchSuggestions) {
                 searchSuggestions.innerHTML = '';
                 if (data.length > 0) {
                     data.forEach(item => {
-                        const div = document.createElement('div');
-                        div.className = 'suggestion-item';
+                        const div = document.createElement('div'); div.className = 'suggestion-item';
                         const formattedAddress = formatJapaneseAddress(item.display_name);
                         const nameHtml = item.name ? `<strong>${item.name}</strong><br><span style="font-size:0.8em;color:#5F6368;">${formattedAddress}</span>` : formattedAddress;
                         
@@ -213,15 +288,12 @@ if (searchInput && searchSuggestions) {
                         div.onclick = () => {
                             map.flyTo({ center: [parseFloat(item.lon), parseFloat(item.lat)], zoom: 16 });
                             searchInput.value = item.name ? item.name : formattedAddress.split(' ')[0];
-                            searchSuggestions.style.display = 'none';
-                            searchInput.blur();
+                            searchSuggestions.style.display = 'none'; searchInput.blur();
                         };
                         searchSuggestions.appendChild(div);
                     });
                     searchSuggestions.style.display = 'block';
-                } else {
-                    searchSuggestions.style.display = 'none';
-                }
+                } else { searchSuggestions.style.display = 'none'; }
             } catch(err) { console.error("検索エラー:", err); }
         }, 500); 
     });
@@ -234,32 +306,34 @@ if (searchInput && searchSuggestions) {
                 const data = await res.json();
                 if(data.length > 0) {
                     map.flyTo({ center: [parseFloat(data[0].lon), parseFloat(data[0].lat)], zoom: 16 });
-                    searchSuggestions.style.display = 'none';
-                    searchInput.blur();
+                    searchSuggestions.style.display = 'none'; searchInput.blur();
                 } else { alert("見つかりませんでした"); }
             } catch (err) {}
         } 
     });
 
     document.addEventListener('click', (e) => {
-        if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
-            searchSuggestions.style.display = 'none';
-        }
+        if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) { searchSuggestions.style.display = 'none'; }
     });
 }
 
 const geoBackBtn = document.getElementById('geoBackBtn');
 if (geoBackBtn) { geoBackBtn.addEventListener('click', () => { if (geoMode === 'A') { jumpToCurrentLocation(); } else if (geoMode === 'B') { map.flyTo({ zoom: 20, duration: 800 }); setGeoMode('C'); } else if (geoMode === 'C') { setGeoMode('B'); } }); }
 
+// ==========================================
+// 📝 🌟 爆速ワンタップメモ（ズーム競合解消 ＆ 案B・解決策X適用）
+// ==========================================
 const btnQuickMemo = document.getElementById('btnQuickMemo');
 if (btnQuickMemo) {
     btnQuickMemo.addEventListener('click', () => {
-        // 🌟 待機時間0.0秒で直ちにメモ画面を開く
         const coords = currentWatchCoords || (currentLocationMarker ? [currentLocationMarker.getLngLat().lng, currentLocationMarker.getLngLat().lat] : null);
         if (coords) {
-            map.flyTo({ center: coords, zoom: 20, duration: 800 });
-            setTimeout(() => { map.fire('contextmenu', { lngLat: { lng: coords[0], lat: coords[1] } }); }, 0);
-        } else { alert("現在地を読み込み中です。数秒後にもう一度お試しください。"); }
+            // ズームしながらメモ画面を展開（ズームイン指定：true）
+            openMemoAddSheet({ lng: coords[0], lat: coords[1] }, true);
+        } else {
+            // 🌟 案B: GPS未取得時は、待機時間0秒でエラーにせず入力画面だけを出す
+            openMemoAddSheet(null, false);
+        }
     });
 }
 
@@ -318,7 +392,7 @@ document.getElementById('saveProfileBtn').addEventListener('click', async () => 
 document.getElementById('submitOpinionBtn').addEventListener('click', async () => { const text = document.getElementById('opinionInput').value.trim(); if (!text) return; try { await addDoc(collection(db, "opinions"), { text: text, senderId: currentUserId, createdAt: new Date() }); alert('送信完了！ご協力ありがとうございます。'); document.getElementById('opinionInput').value = ""; } catch (e) {} });
 
 // ==========================================
-// 📝 攻略メモ機能 ＆ Google風トースト
+// 📝 攻略メモ機能
 // ==========================================
 function compressImage(file, maxWidth = 800) {
     return new Promise((resolve) => {
@@ -335,14 +409,36 @@ document.getElementById('btnCloseFilter').addEventListener('click', () => { docu
 document.getElementById('chkShowMineOnly').addEventListener('change', () => { filterState.showMineOnly = document.getElementById('chkShowMineOnly').checked; applyFilters(); });
 filterContainer.addEventListener('change', () => { filterState.categories = Array.from(filterContainer.querySelectorAll('input:checked')).map(cb => cb.value); applyFilters(); });
 
-function openMemoAddSheet(lngLat) {
-    targetLngLat = lngLat; editingMemoId = null; if (tempPinMarker) tempPinMarker.remove();
-    const wrapper = document.createElement('div'); const pin = document.createElement('div'); pin.className = 'sharp-temp-pin'; wrapper.appendChild(pin);
-    tempPinMarker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat(lngLat).addTo(map);
-    map.easeTo({ center: lngLat, padding: { top: 90, bottom: 450, left: 0, right: 0 }, duration: 350 }); document.getElementById('memoBottomSheet').classList.remove('show'); document.getElementById('filterBottomSheet').classList.remove('show'); const actionPanel = document.getElementById('memoActionPanel'); actionPanel.classList.remove('peek'); actionPanel.classList.add('show');
+function openMemoAddSheet(lngLat, zoomIn = false) {
+    targetLngLat = lngLat; editingMemoId = null; 
+    if (tempPinMarker) { tempPinMarker.remove(); tempPinMarker = null; }
+    
+    document.getElementById('memoBottomSheet').classList.remove('show'); 
+    document.getElementById('filterBottomSheet').classList.remove('show'); 
+    const actionPanel = document.getElementById('memoActionPanel'); 
+    actionPanel.classList.remove('peek'); actionPanel.classList.add('show');
+    
+    if (lngLat) {
+        // 🌟 バグ修正: 仮ピンも「外箱」で包んで座標移動させる
+        const wrapper = document.createElement('div'); wrapper.className = 'marker-wrapper';
+        const pin = document.createElement('div'); pin.className = 'sharp-temp-pin pop-animation'; 
+        wrapper.appendChild(pin);
+        
+        tempPinMarker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat(lngLat).addTo(map);
+        
+        // flyToに一本化してズームキャンセルバグを防止
+        const cameraOptions = { center: lngLat, padding: { top: 90, bottom: 450, left: 0, right: 0 }, duration: 800 };
+        if (zoomIn) cameraOptions.zoom = 20;
+        map.flyTo(cameraOptions);
+        
+        document.getElementById('memoTextInput').placeholder = "タワマンの入り口は裏手です、等";
+    } else {
+        // 🌟 案B：未取得時はエラーにせず画面だけ出す
+        document.getElementById('memoTextInput').placeholder = "📍 GPSを取得中... メモを先に入力できます";
+    }
 }
 
-const closeMemoForm = () => { const actionPanel = document.getElementById('memoActionPanel'); actionPanel.classList.remove('show'); actionPanel.classList.remove('peek'); document.getElementById('btnRemoveImage').click(); document.getElementById('memoTextInput').value = ""; editingMemoId = null; if (tempPinMarker) tempPinMarker.remove(); };
+const closeMemoForm = () => { const actionPanel = document.getElementById('memoActionPanel'); actionPanel.classList.remove('show'); actionPanel.classList.remove('peek'); document.getElementById('btnRemoveImage').click(); document.getElementById('memoTextInput').value = ""; editingMemoId = null; if (tempPinMarker) { tempPinMarker.remove(); tempPinMarker = null; } };
 document.getElementById('btnCancelForm').addEventListener('click', closeMemoForm);
 
 async function handleMemoImage(file, btnTextId, defaultText) {
@@ -359,6 +455,13 @@ document.getElementById('btnRemoveImage').addEventListener('click', () => { sele
 
 document.getElementById('btnSaveMemo').addEventListener('click', async () => {
     const text = document.getElementById('memoTextInput').value.trim(); if (!text && selectedImageDataUrls.length === 0) { alert("入力必須です"); return; }
+    
+    // 🌟 解決策 X: 最終送信時にGPSがまだ取れていなければエラーを出す
+    if (!targetLngLat) {
+        alert("現在地を取得中です。電波の良い場所で再度お試しください。");
+        return;
+    }
+
     const catInput = document.querySelector('input[name="memoCatInput"]:checked'); const category = catInput ? catInput.value : '💡 その他';
     const isShowName = document.getElementById('chkShowName').checked; const finalSenderName = isShowName ? myProfileName : "匿名ドライバー";
     const saveBtn = document.getElementById('btnSaveMemo'); saveBtn.disabled = true; saveBtn.textContent = "⏳ 送信中";
@@ -376,10 +479,12 @@ document.getElementById('btnSaveMemo').addEventListener('click', async () => {
         
         closeMemoForm(); await loadMemosToMap();
 
-        // 🌟 Google風 Snackbar トーストを表示 (案A)
+        // 🌟 トースト通知 (フワッと消える)
         const toast = document.getElementById('materialToast');
-        toast.classList.add('show');
-        setTimeout(() => { toast.classList.remove('show'); }, 3500); // 3.5秒後にフワッと消える
+        if (toast) {
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 3500);
+        }
 
     } catch (e) { alert("エラーが発生しました"); } finally { saveBtn.disabled = false; saveBtn.textContent = "投稿する"; }
 });
@@ -396,8 +501,6 @@ function applyFilters() {
     allMemosData.forEach(data => {
         if (filterState.showMineOnly && data.senderId !== currentUserId) return;
         if (!filterState.categories.includes(data.category)) return;
-        let iconId = 'icon-info';
-        if (data.category === '🏢 建物・入口') iconId = 'icon-building'; else if (data.category === '🅿️ 駐輪スポット') iconId = 'icon-parking'; else if (data.category === '⚠️ 注意・取締り') iconId = 'icon-warning'; else if (data.category === '🚻 トイレ・公園') iconId = 'icon-restroom';
 
         const isSelected = data.id === currentOpenMemoId;
         let displayLng = data.lng; let displayLat = data.lat;
@@ -406,7 +509,7 @@ function applyFilters() {
             if (overlapCount > 0) { displayLng += overlapCount * 0.000012; displayLat += overlapCount * 0.000012; }
             usedCoords.push({lng: displayLng, lat: displayLat});
         }
-        features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [displayLng, displayLat] }, properties: { id: data.id, iconName: iconId, category: data.category, lng: data.lng, lat: data.lat, isSelected: isSelected, opacity: 1.0 } });
+        features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [displayLng, displayLat] }, properties: { id: data.id, category: data.category, lng: data.lng, lat: data.lat, isSelected: isSelected, opacity: 1.0 } });
     });
     features.sort((a, b) => { if (a.properties.isSelected) return 1; if (b.properties.isSelected) return -1; return 0; });
     map.getSource('memos').setData({ type: 'FeatureCollection', features: features });
@@ -430,13 +533,8 @@ function openMemoBottomSheet(props) {
     const manageBtns = document.getElementById('sheetManageButtons'); if (manageBtns) manageBtns.style.display = (fullData.senderId === currentUserId) ? 'flex' : 'none';
     document.getElementById('sheetAuthorContainer').onclick = () => { if (fullData.senderName !== "匿名ドライバー") openProfileModal(fullData.senderId, fullData.senderName); };
     
-    // 🌟 ここへ移動ボタンのイベント連携
     const btnNavHere = document.getElementById('btnNavHere');
-    if (btnNavHere) {
-        btnNavHere.onclick = () => {
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${fullData.lat},${fullData.lng}`, '_blank');
-        };
-    }
+    if (btnNavHere) { btnNavHere.onclick = () => { window.open(`https://www.google.com/maps/dir/?api=1&destination=${fullData.lat},${fullData.lng}`, '_blank'); }; }
 
     const imgContainer = document.getElementById('sheetImageContainer'); const scrollArea = document.getElementById('sheetImageScroll'); const dotsArea = document.getElementById('carouselDots'); const counterLabel = document.getElementById('carouselCounter'); let bottomPadding = 300; 
     let images = fullData.imageUrls || (fullData.imageUrl ? [fullData.imageUrl] : []);
@@ -465,7 +563,15 @@ document.getElementById('btnEditMemo')?.addEventListener('click', () => {
     selectedImageDataUrls = memoData.imageUrls || (memoData.imageUrl ? [memoData.imageUrl] : []);
     if (selectedImageDataUrls.length > 0) { document.getElementById('memoImagePreview').src = selectedImageDataUrls[0]; document.getElementById('memoImagePreviewContainer').style.display = 'block'; let countLabel = document.getElementById('memoImageCountLabel'); if(!countLabel) { countLabel = document.createElement('div'); countLabel.id = 'memoImageCountLabel'; countLabel.style.textAlign = 'center'; countLabel.style.fontSize = '12px'; countLabel.style.color = '#1A73E8'; countLabel.style.fontWeight = 'bold'; countLabel.style.marginTop = '4px'; document.getElementById('memoImagePreviewContainer').appendChild(countLabel); } countLabel.textContent = `${selectedImageDataUrls.length}枚選択中 (最大3枚)`; if (selectedImageDataUrls.length < 3) { document.getElementById('memoCameraBtnText').parentNode.style.display = 'inline-block'; document.getElementById('memoImageBtnText').parentNode.style.display = 'inline-block'; } else { document.getElementById('memoCameraBtnText').parentNode.style.display = 'none'; document.getElementById('memoImageBtnText').parentNode.style.display = 'none'; } } else { document.getElementById('btnRemoveImage').click(); }
 
-    document.getElementById('memoBottomSheet').classList.remove('show'); document.getElementById('memoBottomSheet').classList.remove('peek'); const actionPanel = document.getElementById('memoActionPanel'); actionPanel.classList.remove('peek'); actionPanel.classList.add('show'); map.easeTo({ center: targetLngLat, padding: { top: 90, bottom: 450, left: 0, right: 0 }, duration: 350 }); if (tempPinMarker) tempPinMarker.remove(); const wrapper = document.createElement('div'); const pin = document.createElement('div'); pin.className = 'sharp-temp-pin'; wrapper.appendChild(pin); tempPinMarker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat(targetLngLat).addTo(map);
+    document.getElementById('memoBottomSheet').classList.remove('show'); document.getElementById('memoBottomSheet').classList.remove('peek'); const actionPanel = document.getElementById('memoActionPanel'); actionPanel.classList.remove('peek'); actionPanel.classList.add('show'); 
+    
+    if (tempPinMarker) { tempPinMarker.remove(); tempPinMarker = null; } 
+    const wrapper = document.createElement('div'); wrapper.className = 'marker-wrapper';
+    const pin = document.createElement('div'); pin.className = 'sharp-temp-pin pop-animation'; 
+    wrapper.appendChild(pin); 
+    tempPinMarker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat(targetLngLat).addTo(map);
+    
+    map.flyTo({ center: targetLngLat, padding: { top: 90, bottom: 450, left: 0, right: 0 }, duration: 800 });
 });
 
 async function openProfileModal(targetId, targetName) { document.getElementById('modalName').textContent = targetName; document.getElementById('modalArea').textContent = "読込中..."; document.getElementById('modalTime').textContent = "読込中..."; document.getElementById('modalLikesCount').textContent = "-"; document.getElementById('modalTags').innerHTML = ""; document.getElementById('profileModalOverlay').style.display = 'block'; document.getElementById('profileModal').style.display = 'block'; try { const snap = await getDoc(doc(db, "profiles", targetId)); if (snap.exists()) { const data = snap.data(); document.getElementById('modalArea').textContent = data.mainArea || "未設定"; document.getElementById('modalTime').textContent = data.mainTime || "未設定"; document.getElementById('modalLikesCount').textContent = data.totalLikes || 0; const tags = [...(data.vehicles || []), ...(data.services || [])]; if(tags.length) tags.forEach(t => { const span = document.createElement('span'); span.className='tag'; span.textContent=t; document.getElementById('modalTags').appendChild(span); }); } } catch(e) {} }
@@ -519,38 +625,18 @@ map.on('dragstart', closeWeatherSheetOnMapMove); map.on('zoomstart', closeWeathe
 if (btnSelectWeatherArea) { btnSelectWeatherArea.addEventListener('click', () => { weatherSheet.classList.remove('show'); weatherTargetMark.style.display = 'block'; btnWeatherConfirm.style.display = 'flex'; }); }
 if (btnWeatherConfirm) { btnWeatherConfirm.addEventListener('click', () => { weatherTargetMark.style.display = 'none'; btnWeatherConfirm.style.display = 'none'; const center = map.getCenter(); fetchWeatherData(center.lat, center.lng, true); weatherSheet.classList.add('show'); }); }
 
-// ==========================================
-// 🌧️ 気象庁・雨雲レーダー ＆ Google Maps 渋滞確認
-// ==========================================
 document.getElementById('chkRainRadar').addEventListener('change', async (e) => {
     const show = e.target.checked;
     if (show) {
         if (map.getLayer('rain-radar')) { map.setLayoutProperty('rain-radar', 'visibility', 'visible'); return; }
         try {
-            // 気象庁から最新のタイムスタンプを取得
             const res = await fetch('https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json');
             const data = await res.json();
             const basetime = data[0].basetime;
             const validtime = data[0].validtime;
-            
-            map.addSource('jma-radar', {
-                type: 'raster',
-                tiles: [`https://www.jma.go.jp/bosai/jmatile/data/nowc/${basetime}/none/${validtime}/surf/hrpns/{z}/{x}/{y}.png`],
-                tileSize: 256,
-                attribution: '<a href="https://www.jma.go.jp/" target="_blank">気象庁</a>'
-            });
-            
-            // マップ上のピン（unclustered-point）よりも下に雨雲を表示する
-            map.addLayer({
-                id: 'rain-radar',
-                type: 'raster',
-                source: 'jma-radar',
-                paint: { 'raster-opacity': 0.6 }
-            }, 'clusters'); // 'clusters'レイヤーの直下に配置
-        } catch(err) {
-            alert("雨雲データの取得に失敗しました。");
-            e.target.checked = false;
-        }
+            map.addSource('jma-radar', { tiles: [`https://www.jma.go.jp/bosai/jmatile/data/nowc/${basetime}/none/${validtime}/surf/hrpns/{z}/{x}/{y}.png`], type: 'raster', tileSize: 256, attribution: '<a href="https://www.jma.go.jp/" target="_blank">気象庁</a>' });
+            map.addLayer({ id: 'rain-radar', type: 'raster', source: 'jma-radar', paint: { 'raster-opacity': 0.6 } }, 'clusters'); 
+        } catch(err) { alert("雨雲データの取得に失敗しました。"); e.target.checked = false; }
     } else {
         if (map.getLayer('rain-radar')) { map.setLayoutProperty('rain-radar', 'visibility', 'none'); }
     }
@@ -558,11 +644,7 @@ document.getElementById('chkRainRadar').addEventListener('change', async (e) => 
 
 document.getElementById('btnCheckTraffic').addEventListener('click', () => {
     const center = map.getCenter();
-    // Google Mapsアプリ（またはブラウザ）を渋滞表示モードで起動
     window.open(`https://www.google.com/maps/@${center.lat},${center.lng},15z/data=!5m1!1e1`, '_blank');
 });
 
-// ==========================================
-// 🌟 サポート画面：アコーディオン開閉
-// ==========================================
 document.querySelectorAll('.accordion-header').forEach(button => { button.addEventListener('click', () => { const content = button.nextElementSibling; button.classList.toggle('active'); if (button.classList.contains('active')) { content.style.maxHeight = content.scrollHeight + "px"; } else { content.style.maxHeight = null; } }); });

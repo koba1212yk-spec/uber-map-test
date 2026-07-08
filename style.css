@@ -39,15 +39,22 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100dvh; font-family: "G
 .current-location-dot::after { content: ''; position: absolute; top: -14px; left: -14px; width: 40px; height: 40px; background-color: rgba(66, 133, 244, 0.4); border-radius: 50%; animation: pulse-blue 2s infinite ease-out; }
 @keyframes pulse-blue { 0% { transform: scale(0.2); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
 
-/* 📍 仮ピン */
-.sharp-temp-pin { width: 28px; height: 40px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36"><path fill="%23EA4335" d="M12 0C5.37 0 0 5.37 0 12c0 9 12 24 12 24s12-15 12-24c0-6.63-5.37-12-12-12zm0 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center bottom; filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.3)); animation: dropBounce 0.35s ease-out; }
-@keyframes dropBounce { 0% { transform: translateY(-25px); opacity: 0; } 60% { transform: translateY(0); opacity: 1; } 80% { transform: translateY(-4px); } 100% { transform: translateY(0); } }
+/* 🌟 バグ修正: MapLibreが動かすための外箱（ピン用） */
+.marker-wrapper { display: flex; justify-content: center; align-items: center; }
+
+/* 📍 HTMLピンのアニメーション・デザイン（内箱） */
+.sharp-temp-pin { width: 28px; height: 40px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36"><path fill="%23EA4335" d="M12 0C5.37 0 0 5.37 0 12c0 9 12 24 12 24s12-15 12-24c0-6.63-5.37-12-12-12zm0 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center bottom; filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.3)); }
+
+.custom-memo-marker { width: 32px; height: 32px; border-radius: 50%; border: 3px solid #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 2; transition: background-color 0.2s; }
+.custom-memo-marker.selected { z-index: 3; border-color: #3C4043 !important; }
+
+/* 🌟 ポワッと現れるポップアニメーション（transformの競合を防ぐために分離） */
+.pop-animation { animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+@keyframes popIn { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.25); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 
 /* 📻 エリア注目情報 (3D回転ティッカー) */
 .area-info-ticker { position: absolute; bottom: calc(80px + env(safe-area-inset-bottom)); left: 0; right: 0; height: 56px; background: #FFFFFF; border-radius: 40px 40px 0 0 !important; box-shadow: 0 -4px 16px rgba(0,0,0,0.1) !important; border-top: none !important; display: flex; align-items: center; z-index: 10; padding-top: 8px; }
 .ticker-left { flex: 1; padding: 0 0 0 24px !important; height: 100%; perspective: 1000px; display: flex; align-items: center; cursor: pointer; overflow: hidden; }
-
-/* 🌟 ニューモフィズム風の天気ボタン */
 .ticker-right { border-left: none; margin: 8px 16px 8px 8px; padding: 0 16px !important; border-radius: 12px; background: #FFFFFF; box-shadow: 3px 3px 6px #E8EAED, -3px -3px 6px #FFFFFF; font-size: 0.85em; font-weight: bold; color: #5F6368; display: flex; align-items: center; height: 70%; flex-shrink: 0; transition: all 0.2s ease; cursor: pointer; }
 .ticker-right:active { box-shadow: inset 2px 2px 4px #E8EAED, inset -2px -2px 4px #FFFFFF; }
 
@@ -149,7 +156,7 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .btn-weather-confirm { position: absolute; bottom: calc(155px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 100; padding: 14px 28px; background: #1A73E8; color: white; font-weight: bold; border: none; border-radius: 30px; box-shadow: 0 4px 12px rgba(26,115,232,0.4); cursor: pointer; font-size: 1.1em; display: flex; align-items: center; gap: 8px; }
 .btn-weather-confirm:active { background: #1557B0; transform: translateX(-50%) scale(0.95); }
 
-/* 🌟 Google風 Snackbar (トースト) フェードアニメーション - 白基調オシャレ版(案A) */
+/* 🌟 Google風 Snackbar (トースト) アニメーション（白基調・案A） */
 .material-toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #FFFFFF; color: #3C4043; padding: 14px 24px; border-radius: 24px; display: flex; align-items: center; gap: 12px; font-size: 0.95em; font-weight: bold; box-shadow: 0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08); z-index: 5000; opacity: 0; visibility: hidden; transition: opacity 0.5s ease; pointer-events: none; }
 .material-toast.show { opacity: 1; visibility: visible; }
 .toast-icon { font-size: 1.4em; line-height: 1; }

@@ -15,7 +15,6 @@
 </head>
 <body>
 
-    
     <div id="mapPage" class="page-section active-page">
         <div id="map"></div>
 
@@ -32,7 +31,6 @@
             <input type="text" id="addressSearchInput" placeholder="ここで検索 (例: 中葛西3丁目)">
         </div>
 
-        <!-- 🌟 検索候補リスト（Nominatim用に追加） -->
         <div id="searchSuggestions" class="search-suggestions"></div>
 
         <div id="mapControlsContainer" class="map-controls-container">
@@ -123,7 +121,6 @@
                 <button id="btnCloseFilter" style="background:none; border:none; font-size:0.9em; color:#1A73E8; font-weight:bold; cursor:pointer;">閉じる</button>
             </h3>
             
-            <!-- 🌟 マップレイヤー表示（雨雲・渋滞） -->
             <p style="font-size: 0.9em; font-weight:bold; color:#5F6368; margin-top: 15px; margin-bottom: 8px;">マップ表示オプション</p>
             <div class="filter-toggles" style="margin-bottom: 20px;">
                 <label class="toggle-name-label" style="justify-content: space-between; border-bottom: 1px dashed #E8EAED; padding-bottom: 10px; margin-bottom: 10px;">
@@ -173,7 +170,6 @@
                     </div>
                 </div>
 
-                <!-- 🌟 左端にナビボタン、右端に編集・削除ボタン -->
                 <div class="action-bottom-row">
                     <div class="action-left-bottom">
                         <button id="btnNavHere" class="btn-manage nav">🚗 ここへ移動</button>
@@ -187,12 +183,11 @@
             </div>
         </div>
 
-        <!-- 🌟 Google風のおしゃれな「メモありがとう」ポップアップ (案A：白浮き出しフェード) -->
         <div id="materialToast" class="material-toast">
             <div class="toast-icon">✨</div>
             <div class="toast-text">
                 メモありがとう！<br>
-                <span style="font-size: 0.85em; font-weight: normal; color: #5F6368;">マップに登録されました</span>
+                <span style="font-size: 0.85em; font-weight: normal; opacity: 0.9; color: #5F6368;">マップに登録されました</span>
             </div>
         </div>
 
