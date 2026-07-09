@@ -32,20 +32,19 @@ let targetLngLat = null;
 let geoMode = 'A'; 
 let geoZoomTimer = null;
 
-// 🌟 🆕 爆速GPS追跡用変数
 let currentWatchCoords = null;
 let watchPositionId = null;
 
 let currentGroupMemos = [];
 let currentGroupIndex = 0;
 
-let filterState = { showMineOnly: false, categories: ['🏢 建物・入口', '🅿️ 駐輪スポット', '⚠️ 注意・取締り', '🚻 ト ময়・公園', '💡 その他'] };
+let filterState = { showMineOnly: false, categories: ['🏢 建物・入口', '🅿️ 駐輪スポット', '⚠️ 注意・取締り', '🚻 トイレ・公園', '💡 その他'] };
 let allMemosData = []; 
 let latestMemos = [];
 let tickerIndex = 0;
 let isTickerFlipped = false;
 
-// 🌟 🆕 HTMLマーカー描画・管理用
+// 🌟 HTMLマーカー描画・管理用
 let markersOnScreen = {};
 const catIconPaths = {
     '🏢 建物・入口': '<path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>',
@@ -56,6 +55,13 @@ const catIconPaths = {
 };
 const catColors = { '🏢 建物・入口': '#1A73E8', '🅿️ 駐輪スポット': '#34A853', '⚠️ 注意・取締り': '#EA4335', '🚻 トイレ・公園': '#FBBC04', '💡 その他': '#9AA0A6' };
 
+// 光るリング用の色変換関数 (透明度付き)
+const hexToRgba = (hex, alpha) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 localStorage.setItem('deliMapActiveTab', 'tabMap');
 
@@ -74,9 +80,6 @@ signInAnonymously(auth).then((userCredential) => {
     loadProfile(); 
 }).catch(e => console.error(e));
 
-// ==========================================
-// 🌟 グローバル関数群（現在地・コンパス制御）
-// ==========================================
 function updateCurrentLocation(coords) {
     if (!currentLocationMarker) {
         const el = document.createElement('div'); el.className = 'current-location-dot';
@@ -88,7 +91,6 @@ function updateCurrentLocation(coords) {
     }
 }
 
-// 🌟 🆕 バックグラウンドGPSトラッキング＆未取得時のカバー（案B）
 function startLocationTracking() {
     if (navigator.geolocation) {
         watchPositionId = navigator.geolocation.watchPosition(
@@ -96,7 +98,6 @@ function startLocationTracking() {
                 currentWatchCoords = [pos.coords.longitude, pos.coords.latitude];
                 updateCurrentLocation(currentWatchCoords);
                 
-                // 🌟 案B: GPS未取得のままメモ画面を開いて文字を打っている最中に、GPSが取れたら自動でピンを刺してズーム
                 const actionPanel = document.getElementById('memoActionPanel');
                 if (actionPanel && actionPanel.classList.contains('show') && !targetLngLat && !editingMemoId) {
                     targetLngLat = { lng: currentWatchCoords[0], lat: currentWatchCoords[1] };
@@ -149,23 +150,82 @@ function stopCompass() { window.removeEventListener('deviceorientationabsolute',
 function handleOrientation(e) { const cone = document.getElementById('headingCone'); if (!cone || geoMode !== 'C') return; let heading = null; if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) { heading = e.webkitCompassHeading; } else if ((e.absolute === true || e.type === 'deviceorientationabsolute') && e.alpha !== null) { heading = 360 - e.alpha; } if (heading !== null) { const mapBearing = map.getBearing(); const finalRotation = heading - mapBearing; cone.style.transform = `translateX(-50%) rotate(${Math.round(finalRotation)}deg)`; } }
 
 // ==========================================
-// 🗺️ MapTiler
+// 🗺️ MapTiler (初期45度斜め表示)
 // ==========================================
 const MAPTILER_KEY = "R7X03ziyuOxnZBBvDL0G";
 const map = new maplibregl.Map({
     container: 'map',
     style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`,
-    center: [139.8731, 35.6635], zoom: 14, attributionControl: false 
+    center: [139.8731, 35.6635],
+    zoom: 14,
+    pitch: 45, // 🌟 初期で45度の斜め視点を設定
+    attributionControl: false 
 });
 
 map.on('load', () => {
     startLocationTracking();
     jumpToCurrentLocation();
     
-    // 🌟 クラスター（数字の塊）はそのまま維持、バラけたピンはHTMLマーカーで描画
+    // 🌟 【ここに追加】初期起動時に、元からある3D建物をすべて強制オフにする
+    const layers = map.getStyle().layers;
+    layers.forEach(layer => {
+        if (layer.type === 'fill-extrusion') {
+            map.setLayoutProperty(layer.id, 'visibility', 'none');
+        }
+    });
+
     map.addSource('memos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
     map.addLayer({ id: 'clusters', type: 'circle', source: 'memos', filter: ['has', 'point_count'], paint: { 'circle-color': '#06C167', 'circle-radius': 18, 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
     map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'memos', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 14, 'text-font': ['Noto Sans Bold'] }, paint: { 'text-color': '#ffffff' } });
+
+    // 🌟 【ここも書き換え】3D建物のトグル処理（チェックボックスと連動）
+    document.getElementById('chk3dBuilding').addEventListener('change', (e) => {
+        const show = e.target.checked;
+        const currentLayers = map.getStyle().layers;
+        currentLayers.forEach(layer => {
+            if (layer.type === 'fill-extrusion') {
+                map.setLayoutProperty(layer.id, 'visibility', show ? 'visible' : 'none');
+            }
+        });
+    });
+
+    // ... (これ以降の map.on('click', 'clusters') などはそのまま) ...
+    // 🌟 3D建物のトグル処理
+    document.getElementById('chk3dBuilding').addEventListener('change', (e) => {
+        const show = e.target.checked;
+        if (show) {
+            if (map.getLayer('3d-buildings')) {
+                map.setLayoutProperty('3d-buildings', 'visibility', 'visible');
+            } else {
+                // MapTilerのデフォルトソースを取得して3D建物を追加
+                const sources = map.getStyle().sources;
+                let sourceId = 'v3'; 
+                if (!sources['v3']) {
+                    sourceId = Object.keys(sources).find(k => sources[k].type === 'vector');
+                }
+                if (sourceId) {
+                    map.addLayer({
+                        'id': '3d-buildings',
+                        'source': sourceId,
+                        'source-layer': 'building',
+                        'filter': ['==', 'extrude', 'true'],
+                        'type': 'fill-extrusion',
+                        'minzoom': 15,
+                        'paint': {
+                            'fill-extrusion-color': '#e3e3e3',
+                            'fill-extrusion-height': ['*', ['get', 'render_height'], 1],
+                            'fill-extrusion-base': ['*', ['get', 'render_min_height'], 1],
+                            'fill-extrusion-opacity': 0.6
+                        }
+                    }, 'clusters'); // ピンなどの下に配置
+                }
+            }
+        } else {
+            if (map.getLayer('3d-buildings')) {
+                map.setLayoutProperty('3d-buildings', 'visibility', 'none');
+            }
+        }
+    });
 
     map.on('click', 'clusters', (e) => {
         const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
@@ -174,7 +234,6 @@ map.on('load', () => {
 
     map.on('click', (e) => {
         const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
-        // HTMLマーカーをクリックした時はイベントがブロックされるため、ここは空の場所をタップした時の処理
         if (!features.length) {
             const sheet = document.getElementById('memoBottomSheet'); if (sheet.classList.contains('show')) sheet.classList.add('peek');
             document.getElementById('memoActionPanel').classList.remove('show'); document.getElementById('filterBottomSheet').classList.remove('show');
@@ -188,7 +247,7 @@ map.on('load', () => {
     loadMemosToMap();
 });
 
-// 🌟 🆕 HTMLマーカーへの変換 ＆ 左上バグの完全修正（外箱の分離）
+// 🌟 ピンの光るオーラ表現（案A）の実装
 function updateMarkers() {
     if (!map.getSource('memos')) return;
     const newMarkers = {};
@@ -202,25 +261,22 @@ function updateMarkers() {
             if (!markersOnScreen[id]) {
                 const isSelected = feature.properties.isSelected;
                 const cat = feature.properties.category || '💡 その他';
-                const bgColor = isSelected ? '#FFFFFF' : catColors[cat];
-                const iconColor = isSelected ? catColors[cat] : '#FFFFFF';
                 
-                // 🌟 バグ修正: MapLibreが座標を動かすための「外箱」
                 const wrapper = document.createElement('div');
                 wrapper.className = 'marker-wrapper';
 
-                // 🌟 アニメーションして色が変わる「ピン本体（内箱）」
                 const el = document.createElement('div');
                 el.className = `custom-memo-marker pop-animation ${isSelected ? 'selected' : ''}`;
-                el.style.backgroundColor = bgColor;
-                el.style.borderColor = catColors[cat];
-                el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="${iconColor}">${catIconPaths[cat]}</svg>`;
                 
-                // 箱を合体してマップに配置
+                // 色は常にカテゴリカラーを維持し、CSS変数にセットして光のリング(box-shadow)に使う
+                el.style.backgroundColor = catColors[cat];
+                el.style.setProperty('--cat-color', catColors[cat]);
+                el.style.setProperty('--cat-color-alpha', hexToRgba(catColors[cat], 0.4));
+                el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="#FFFFFF">${catIconPaths[cat]}</svg>`;
+                
                 wrapper.appendChild(el);
                 const marker = new maplibregl.Marker({element: wrapper}).setLngLat(coords).addTo(map);
                 
-                // タップ処理はピン本体に設定
                 el.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const currentFeatures = map.querySourceFeatures('memos').filter(f => !f.properties.cluster);
@@ -235,13 +291,12 @@ function updateMarkers() {
                 const markerObj = markersOnScreen[id];
                 const el = markerObj.el;
                 const isSelected = feature.properties.isSelected;
-                const cat = feature.properties.category || '💡 その他';
                 
-                // 色や選択状態の更新
+                // 🌟 色の反転を廃止し、クラスの付け外しだけでオーラを表現
                 if (isSelected && !el.classList.contains('selected')) {
-                    el.classList.add('selected'); el.style.backgroundColor = '#FFFFFF'; el.querySelector('svg').setAttribute('fill', catColors[cat]);
+                    el.classList.add('selected');
                 } else if (!isSelected && el.classList.contains('selected')) {
-                    el.classList.remove('selected'); el.style.backgroundColor = catColors[cat]; el.querySelector('svg').setAttribute('fill', '#FFFFFF');
+                    el.classList.remove('selected');
                 }
                 markerObj.marker.setLngLat(coords); 
             }
@@ -256,7 +311,7 @@ map.on('render', updateMarkers);
 
 
 // ==========================================
-// 🔍 🌟 Nominatim (サジェスト付き無料検索エンジン)
+// 🔍 🌟 Nominatim (サジェスト検索)
 // ==========================================
 const searchInput = document.getElementById('addressSearchInput');
 const searchSuggestions = document.getElementById('searchSuggestions');
@@ -321,17 +376,15 @@ const geoBackBtn = document.getElementById('geoBackBtn');
 if (geoBackBtn) { geoBackBtn.addEventListener('click', () => { if (geoMode === 'A') { jumpToCurrentLocation(); } else if (geoMode === 'B') { map.flyTo({ zoom: 20, duration: 800 }); setGeoMode('C'); } else if (geoMode === 'C') { setGeoMode('B'); } }); }
 
 // ==========================================
-// 📝 🌟 爆速ワンタップメモ（ズーム競合解消 ＆ 案B・解決策X適用）
+// 📝 🌟 爆速ワンタップメモ
 // ==========================================
 const btnQuickMemo = document.getElementById('btnQuickMemo');
 if (btnQuickMemo) {
     btnQuickMemo.addEventListener('click', () => {
         const coords = currentWatchCoords || (currentLocationMarker ? [currentLocationMarker.getLngLat().lng, currentLocationMarker.getLngLat().lat] : null);
         if (coords) {
-            // ズームしながらメモ画面を展開（ズームイン指定：true）
             openMemoAddSheet({ lng: coords[0], lat: coords[1] }, true);
         } else {
-            // 🌟 案B: GPS未取得時は、待機時間0秒でエラーにせず入力画面だけを出す
             openMemoAddSheet(null, false);
         }
     });
@@ -362,9 +415,6 @@ document.getElementById('tickerClickArea').addEventListener('click', () => {
     map.flyTo({ center: [targetMemo.lng, targetMemo.lat], zoom: 16 }); openMemoBottomSheet(targetMemo);
 });
 
-// ==========================================
-// ⚙️ プロフィール設定 ＆ フィードバック
-// ==========================================
 async function loadProfile() {
     try {
         const snap = await getDoc(doc(db, "profiles", currentUserId));
@@ -391,9 +441,6 @@ document.getElementById('saveProfileBtn').addEventListener('click', async () => 
 
 document.getElementById('submitOpinionBtn').addEventListener('click', async () => { const text = document.getElementById('opinionInput').value.trim(); if (!text) return; try { await addDoc(collection(db, "opinions"), { text: text, senderId: currentUserId, createdAt: new Date() }); alert('送信完了！ご協力ありがとうございます。'); document.getElementById('opinionInput').value = ""; } catch (e) {} });
 
-// ==========================================
-// 📝 攻略メモ機能
-// ==========================================
 function compressImage(file, maxWidth = 800) {
     return new Promise((resolve) => {
         const reader = new FileReader(); reader.onload = (e) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let width = img.width; let height = img.height; if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; } canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(img, 0, 0, width, height); resolve(canvas.toDataURL('image/jpeg', 0.7)); }; img.src = e.target.result; }; reader.readAsDataURL(file);
@@ -419,21 +466,18 @@ function openMemoAddSheet(lngLat, zoomIn = false) {
     actionPanel.classList.remove('peek'); actionPanel.classList.add('show');
     
     if (lngLat) {
-        // 🌟 バグ修正: 仮ピンも「外箱」で包んで座標移動させる
         const wrapper = document.createElement('div'); wrapper.className = 'marker-wrapper';
         const pin = document.createElement('div'); pin.className = 'sharp-temp-pin pop-animation'; 
         wrapper.appendChild(pin);
         
         tempPinMarker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat(lngLat).addTo(map);
         
-        // flyToに一本化してズームキャンセルバグを防止
         const cameraOptions = { center: lngLat, padding: { top: 90, bottom: 450, left: 0, right: 0 }, duration: 800 };
         if (zoomIn) cameraOptions.zoom = 20;
         map.flyTo(cameraOptions);
         
         document.getElementById('memoTextInput').placeholder = "タワマンの入り口は裏手です、等";
     } else {
-        // 🌟 案B：未取得時はエラーにせず画面だけ出す
         document.getElementById('memoTextInput').placeholder = "📍 GPSを取得中... メモを先に入力できます";
     }
 }
@@ -456,7 +500,6 @@ document.getElementById('btnRemoveImage').addEventListener('click', () => { sele
 document.getElementById('btnSaveMemo').addEventListener('click', async () => {
     const text = document.getElementById('memoTextInput').value.trim(); if (!text && selectedImageDataUrls.length === 0) { alert("入力必須です"); return; }
     
-    // 🌟 解決策 X: 最終送信時にGPSがまだ取れていなければエラーを出す
     if (!targetLngLat) {
         alert("現在地を取得中です。電波の良い場所で再度お試しください。");
         return;
@@ -479,7 +522,6 @@ document.getElementById('btnSaveMemo').addEventListener('click', async () => {
         
         closeMemoForm(); await loadMemosToMap();
 
-        // 🌟 トースト通知 (フワッと消える)
         const toast = document.getElementById('materialToast');
         if (toast) {
             toast.classList.add('show');
@@ -593,9 +635,6 @@ if (btnCloseSheet) { btnCloseSheet.addEventListener('click', (e) => { e.stopProp
 const actionPanel = document.getElementById('memoActionPanel');
 if (actionPanel) { actionPanel.addEventListener('click', (e) => { if (e.target.id !== 'btnCancelForm' && actionPanel.classList.contains('peek')) { actionPanel.classList.remove('peek'); } }); }
 
-// ==========================================
-// 🌤️ 天気データ取得 ＆ エリア選択ロジック
-// ==========================================
 async function fetchWeatherData(lat, lng, isCustom = false) {
     try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,uv_index&timezone=Asia%2FTokyo`;
