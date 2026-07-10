@@ -53,6 +53,36 @@ let latestMemos = [];
 let tickerIndex = 0;
 let isTickerFlipped = false;
 
+
+
+// 🌟 Googleマップのシステムを裏側で安全にロードする関数
+function loadGoogleMapsScript() {
+    return new Promise((resolve) => {
+        if (typeof google !== 'undefined' && google.maps) {
+            resolve();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_API_KEY}&libraries=places&language=ja`;
+        script.async = true;
+        script.defer = true;
+        script.onload = resolve;
+        document.head.appendChild(script);
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 // 🌟 HTMLマーカー描画・管理用
 let markersOnScreen = {};
 const catIconPaths = {
@@ -333,38 +363,120 @@ if (btnQuickMemo) {
     });
 }
 
-// 🎯「地図をタップして建物を指定」ボタンの処理（十字ターゲット・一時3Dモード）
-document.getElementById('btnPickBuilding').addEventListener('click', () => {
-    targetMode = 'building';
-    isPickingBuilding = true;
-    
-    // パネルを一番下まで下げる
-    const actionPanel = document.getElementById('memoActionPanel');
-    actionPanel.classList.remove('peek');
-    actionPanel.style.transform = 'translateY(calc(100% - 70px))'; 
-    
-    // 3Dとカメラ角度の記憶＆起動
-    was3dEnabledBeforePick = document.getElementById('chk3dBuilding').checked;
-    pitchBeforePick = map.getPitch();
 
-    const currentLayers = map.getStyle().layers;
-    currentLayers.forEach(layer => {
-        if (layer.type === 'fill-extrusion') {
-            map.setLayoutProperty(layer.id, 'visibility', 'visible');
+// 🎯「地図をタップして建物を指定」ボタンの処理（本家Googleマップを被せる究極版）
+document.getElementById('btnPickBuilding').addEventListener('click', async () => {
+    // 1. Googleマップのライブラリをロード
+    await loadGoogleMapsScript();
+
+    // 2. 現在のMapTilerの地図の上に、全画面でGoogleマップ用コンテナを被せる
+    const gMapDiv = document.createElement('div');
+    gMapDiv.id = 'googleMapPickerContainer';
+    gMapDiv.style.position = 'fixed';
+    gMapDiv.style.top = '0'; gMapDiv.style.left = '0';
+    gMapDiv.style.width = '100vw'; gMapDiv.style.height = '100dvh';
+    gMapDiv.style.zIndex = '9999'; gMapDiv.style.background = '#fff';
+    document.body.appendChild(gMapDiv);
+
+    // 3. 右上に「戻る」ボタンを配置
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕ 戻る';
+    closeBtn.style.position = 'absolute'; closeBtn.style.top = '20px'; closeBtn.style.right = '20px';
+    closeBtn.style.zIndex = '10000'; closeBtn.style.padding = '10px 20px';
+    closeBtn.style.background = '#fff'; closeBtn.style.border = '1px solid #DADCE0';
+    closeBtn.style.borderRadius = '24px'; closeBtn.style.fontWeight = 'bold';
+    closeBtn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
+    closeBtn.onclick = () => gMapDiv.remove(); // 閉じたら元の画面に戻る
+    gMapDiv.appendChild(closeBtn);
+
+    // 上部に案内ラベルを配置
+    const infoLabel = document.createElement('div');
+    infoLabel.textContent = '🏢 目的の建物をタップしてください';
+    infoLabel.style.position = 'absolute'; infoLabel.style.top = '20px'; infoLabel.style.left = '50%';
+    infoLabel.style.transform = 'translateX(-50%)'; infoLabel.style.zIndex = '10000';
+    infoLabel.style.padding = '10px 20px'; infoLabel.style.background = '#1A73E8';
+    infoLabel.style.color = '#fff'; infoLabel.style.borderRadius = '24px';
+    infoLabel.style.fontWeight = 'bold'; infoLabel.style.fontSize = '0.9em';
+    infoLabel.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    gMapDiv.appendChild(infoLabel);
+
+    // 4. 現在のマップの中心座標を同期して、本家のGoogleマップを生成
+    const center = map.getCenter();
+    const gMap = new google.maps.Map(gMapDiv, {
+        center: { lat: center.lat, lng: center.lng },
+        zoom: 19,
+        fullscreenControl: false, streetViewControl: false, mapTypeControl: false
+    });
+
+    // 5. Googleマップ上で「建物（POI）」がタップされた瞬間をフックする
+    gMap.addListener('click', async (event) => {
+        // 建物や店舗（Place IDを持っている場所）をタップした場合
+        if (event.placeId) {
+            event.stop(); // Google標準のポップアップが開くのを阻止
+
+            const service = new google.maps.places.PlacesService(gMap);
+            service.getDetails({
+                placeId: event.placeId,
+                fields: ['name', 'formatted_address', 'geometry'],
+                language: 'ja'
+            }, (place, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+                    let bName = place.name || "";
+                    let address = place.formatted_address || "";
+
+                    // 日本の住所特有の余計な文字をクリーニング
+                    address = address.replace(/^日本、\s*(〒\d{3}-\d{4}\s*)?/, '');
+                    if (bName) address = address.replace(bName, '').trim();
+                    if (/^[0-9\-－\s]+$/.test(bName)) bName = ""; // 数字だけのゴミデータを排除
+
+                    // DeliMap側の別々の入力欄にカチッと代入
+                    document.getElementById('memoBuildingName').value = bName;
+                    document.getElementById('memoAddress').value = address;
+
+                    // ピンのターゲット座標をタップした建物の中心に完全同期
+                    targetLngLat = { lng: place.geometry.location.lng(), lat: place.geometry.location.lat() };
+                    if (tempPinMarker) {
+                        tempPinMarker.setLngLat(targetLngLat);
+                    } else {
+                        const wrapper = document.createElement('div'); wrapper.className = 'marker-wrapper';
+                        const pin = document.createElement('div'); pin.className = 'sharp-temp-pin pop-animation'; wrapper.appendChild(pin);
+                        tempPinMarker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat(targetLngLat).addTo(map);
+                    }
+                    map.setCenter(targetLngLat);
+
+                    // 役目を終えたGoogleマップをスッと消去して戻る
+                    gMapDiv.remove();
+                }
+            });
+        } else {
+            // 建物がない場所（ただの道路など）をタップした場合は、座標から住所だけを引く
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ location: event.latLng, language: 'ja' }, (results, status) => {
+                if (status === 'OK' && results[0]) {
+                    let address = results[0].formatted_address.replace(/^日本、\s*(〒\d{3}-\d{4}\s*)?/, '');
+                    
+                    document.getElementById('memoBuildingName').value = "";
+                    document.getElementById('memoAddress').value = address;
+
+                    targetLngLat = { lng: event.latLng.lng(), lat: event.latLng.lat() };
+                    if (tempPinMarker) tempPinMarker.setLngLat(targetLngLat);
+                    map.setCenter(targetLngLat);
+
+                    gMapDiv.remove();
+                }
+            });
         }
     });
-    map.easeTo({ pitch: 60, duration: 800 });
-    
-    // 十字マークと決定ボタンを表示
-    document.getElementById('weatherTargetMark').style.display = 'block';
-    document.getElementById('btnWeatherConfirm').style.display = 'flex';
-    
-    const toast = document.getElementById('materialToast');
-    const originalHtml = toast.innerHTML;
-    toast.innerHTML = `<div class="toast-icon">🎯</div><div class="toast-text" style="line-height:1.4;">十字マークを建物に合わせて<br>「決定」を押してください</div>`;
-    toast.classList.add('show');
-    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.innerHTML = originalHtml, 500); }, 3500);
 });
+
+
+
+
+
+
+
+
+
 
 // パネル自体をタップしてキャンセルした時の処理
 const actionPanel = document.getElementById('memoActionPanel');
@@ -644,75 +756,40 @@ if (btnSelectWeatherArea) {
     });
 }
 
-// 🌟「ここで決定」ボタンの処理（天気モード／建物モードの兼用）
+
+
+
+// 🌟「ここで決定」ボタンの処理（天気モード専用に戻す）
 if (btnWeatherConfirm) {
     btnWeatherConfirm.addEventListener('click', async () => {
         weatherTargetMark.style.display = 'none';
         btnWeatherConfirm.style.display = 'none';
-        const center = map.getCenter();
+        
+        // 画面の物理的なド真ん中（十字マークの位置）の座標を正確に抜き出す
+        const centerPoint = { x: map.getContainer().offsetWidth / 2, y: map.getContainer().offsetHeight / 2 };
+        const center = map.unproject(centerPoint);
         
         // ⛅ 天気取得モードの時
         if (targetMode === 'weather') {
             targetMode = null;
             fetchWeatherData(center.lat, center.lng, true);
             weatherSheet.classList.add('show');
-            
-        // 🏢 建物取得モードの時
-        } else if (targetMode === 'building') {
-            targetMode = null;
-            isPickingBuilding = false;
-            targetLngLat = center;
-            
-            // 3Dモードとカメラを元に戻す
-            const show3d = was3dEnabledBeforePick ? 'visible' : 'none';
-            const currentLayers = map.getStyle().layers;
-            currentLayers.forEach(layer => {
-                if (layer.type === 'fill-extrusion') {
-                    map.setLayoutProperty(layer.id, 'visibility', show3d);
-                }
-            });
-            
-            // ピンの移動
-            if (tempPinMarker) {
-                tempPinMarker.setLngLat(targetLngLat);
-            } else {
-                const wrapper = document.createElement('div'); wrapper.className = 'marker-wrapper';
-                const pin = document.createElement('div'); pin.className = 'sharp-temp-pin pop-animation'; wrapper.appendChild(pin);
-                tempPinMarker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat(targetLngLat).addTo(map);
-            }
-            map.flyTo({ center: targetLngLat, pitch: pitchBeforePick, zoom: 19, padding: { top: 90, bottom: 450, left: 0, right: 0 }, duration: 800 });
-            
-            // パネルを全開に戻す
-            const actionPanel = document.getElementById('memoActionPanel');
-            actionPanel.style.transform = '';
-            
-            // Google API呼び出し
-            document.getElementById('memoBuildingName').value = "⏳ 取得中..."; document.getElementById('memoAddress').value = "⏳ 取得中...";
-            try {
-                const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${targetLngLat.lat},${targetLngLat.lng}&key=${GOOGLE_API_KEY}&language=ja`);
-                const data = await res.json();
-                let bName = ""; let address = "";
-                if (data.status === "OK" && data.results.length > 0) {
-                    const bestResult = data.results[0];
-                    address = bestResult.formatted_address.replace(/^日本、\s*(〒\d{3}-\d{4}\s*)?/, '');
-                    const premise = bestResult.address_components.find(c => c.types.includes('premise') || c.types.includes('establishment'));
-                    if (premise) {
-                        bName = premise.long_name;
-                        address = address.replace(bName, '').trim();
-                    } else if (data.results.length > 1) {
-                        const poiResult = data.results.find(r => r.types.includes('point_of_interest') || r.types.includes('premise') || r.types.includes('establishment'));
-                        if (poiResult) { bName = poiResult.address_components[0].long_name; }
-                    }
-                }
-                document.getElementById('memoBuildingName').value = bName || "";
-                document.getElementById('memoAddress').value = address || "";
-            } catch(err) {
-                console.error(err);
-                document.getElementById('memoBuildingName').value = ""; document.getElementById('memoAddress').value = "";
-            }
         }
     });
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 document.getElementById('chkRainRadar').addEventListener('change', async (e) => {
     const show = e.target.checked;

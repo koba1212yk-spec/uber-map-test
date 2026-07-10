@@ -206,9 +206,8 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .close-modal-btn { position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 1.5em; color: #5F6368; cursor: pointer; }
 
 
-
-/* 🌟 地図から建物を探す時に、パネルを一番下まで引っ込める専用クラス */
-#memoActionPanel.show.peek-low {
-    transform: translateY(calc(100% - 40px)) !important;
+/* 🌟 建物指定時にパネルを一番下まで引っ込めるためのクラス */
+#memoActionPanel.peek-bottom {
+    transform: translateY(calc(100% - 90px)) !important;
     overflow: hidden;
 }
