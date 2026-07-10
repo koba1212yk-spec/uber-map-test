@@ -408,6 +408,48 @@ document.getElementById('btnPickBuilding').addEventListener('click', async () =>
         fullscreenControl: false, streetViewControl: false, mapTypeControl: false
     });
 
+
+    // 🌟 ここから追加：現在地に「青い丸」を表示 ＆ 「現在地へ戻るボタン」を配置
+    if (currentWatchCoords) {
+        // 現在地の青い丸ピンを置く
+        new google.maps.Marker({
+            position: { lat: currentWatchCoords[1], lng: currentWatchCoords[0] },
+            map: gMap,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: '#4285F4',
+                fillOpacity: 1,
+                strokeColor: '#FFFFFF',
+                strokeWeight: 2,
+            },
+            clickable: false // 建物タップの邪魔にならないように無効化
+        });
+
+        // 右下に「現在地へ」ボタンを配置
+        const myLocBtn = document.createElement('button');
+        myLocBtn.innerHTML = '🎯 現在地へ';
+        myLocBtn.style.position = 'absolute'; 
+        myLocBtn.style.bottom = '30px'; 
+        myLocBtn.style.right = '20px';
+        myLocBtn.style.zIndex = '10000'; 
+        myLocBtn.style.padding = '10px 15px';
+        myLocBtn.style.background = '#FFFFFF'; 
+        myLocBtn.style.border = 'none';
+        myLocBtn.style.borderRadius = '24px'; 
+        myLocBtn.style.fontWeight = 'bold';
+        myLocBtn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
+        myLocBtn.style.cursor = 'pointer';
+        
+        // ボタンを押したら現在地へカメラを移動
+        myLocBtn.onclick = () => {
+            gMap.panTo({ lat: currentWatchCoords[1], lng: currentWatchCoords[0] });
+        };
+        gMapDiv.appendChild(myLocBtn);
+    }
+    // 🌟 追加ここまで（この下は元々の gMap.addListener('click', ...) が続きます）
+
+
     // 5. Googleマップ上で「建物（POI）」がタップされた瞬間をフックする
     gMap.addListener('click', async (event) => {
         // 建物や店舗（Place IDを持っている場所）をタップした場合
