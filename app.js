@@ -17,6 +17,14 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 const auth = getAuth(app);
 
+// 🌟 Google Maps API Key
+const GOOGLE_API_KEY = "AIzaSyCT8iaIRKwSUfLDqvM8dBvshKNbwyz1B3E";
+
+// 🌟 建物指定モードの管理変数
+let isPickingBuilding = false; 
+let was3dEnabledBeforePick = false;
+let pitchBeforePick = 45;
+
 let currentUserId = "anonymous";
 let myProfileName = "";
 let isNameLocked = false; 
@@ -55,30 +63,27 @@ const catIconPaths = {
 };
 const catColors = { '🏢 建物・入口': '#1A73E8', '🅿️ 駐輪スポット': '#34A853', '⚠️ 注意・取締り': '#EA4335', '🚻 トイレ・公園': '#FBBC04', '💡 その他': '#9AA0A6' };
 
-// 光るリング用の色変換関数 (透明度付き)
 const hexToRgba = (hex, alpha) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
+    const r = parseInt(hex.slice(1, 3), 16); const g = parseInt(hex.slice(3, 5), 16); const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
 localStorage.setItem('deliMapActiveTab', 'tabMap');
-
 let localName = localStorage.getItem('deliMapTempName');
-if (!localName) {
-    const seedId = Math.floor(1000 + Math.random() * 9000); 
-    localName = `名無し配達員(${seedId})`;
-    localStorage.setItem('deliMapTempName', localName);
-}
+if (!localName) { const seedId = Math.floor(1000 + Math.random() * 9000); localName = `名無し配達員(${seedId})`; localStorage.setItem('deliMapTempName', localName); }
 myProfileName = localName;
-document.getElementById('readName').textContent = myProfileName;
-document.getElementById('profileName').value = myProfileName;
+document.getElementById('readName').textContent = myProfileName; document.getElementById('profileName').value = myProfileName;
 
-signInAnonymously(auth).then((userCredential) => {
-    currentUserId = userCredential.user.uid;
-    loadProfile(); 
-}).catch(e => console.error(e));
+signInAnonymously(auth).then((userCredential) => { currentUserId = userCredential.user.uid; loadProfile(); }).catch(e => console.error(e));
+
+// 🌟 建物入力セクションの表示切り替えロジック
+document.querySelectorAll('input[name="memoCatInput"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        const section = document.getElementById('buildingInputSection');
+        if (e.target.value === '🏢 建物・入口') { section.style.display = 'block'; } 
+        else { section.style.display = 'none'; }
+    });
+});
 
 function updateCurrentLocation(coords) {
     if (!currentLocationMarker) {
@@ -86,9 +91,7 @@ function updateCurrentLocation(coords) {
         const cone = document.createElement('div'); cone.className = 'heading-cone'; cone.id = 'headingCone';
         if (geoMode === 'C') cone.classList.add('show'); el.appendChild(cone);
         currentLocationMarker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
-    } else {
-        currentLocationMarker.setLngLat(coords);
-    }
+    } else { currentLocationMarker.setLngLat(coords); }
 }
 
 function startLocationTracking() {
@@ -102,11 +105,8 @@ function startLocationTracking() {
                 if (actionPanel && actionPanel.classList.contains('show') && !targetLngLat && !editingMemoId) {
                     targetLngLat = { lng: currentWatchCoords[0], lat: currentWatchCoords[1] };
                     if (tempPinMarker) tempPinMarker.remove();
-                    
                     const wrapper = document.createElement('div'); wrapper.className = 'marker-wrapper';
-                    const pin = document.createElement('div'); pin.className = 'sharp-temp-pin pop-animation'; 
-                    wrapper.appendChild(pin);
-                    
+                    const pin = document.createElement('div'); pin.className = 'sharp-temp-pin pop-animation'; wrapper.appendChild(pin);
                     tempPinMarker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat(targetLngLat).addTo(map);
                     map.flyTo({ center: targetLngLat, zoom: 20, padding: { top: 90, bottom: 450, left: 0, right: 0 }, duration: 800 });
                     document.getElementById('memoTextInput').placeholder = "タワマンの入り口は裏手です、等";
@@ -136,8 +136,7 @@ function jumpToCurrentLocation() {
         clearTimeout(geoZoomTimer); geoZoomTimer = setTimeout(() => { setGeoMode('B'); }, 850);
     } else {
         navigator.geolocation.getCurrentPosition(pos => {
-            const coords = [pos.coords.longitude, pos.coords.latitude];
-            currentWatchCoords = coords;
+            const coords = [pos.coords.longitude, pos.coords.latitude]; currentWatchCoords = coords;
             map.flyTo({ center: coords, zoom: 16, duration: 800 });
             updateCurrentLocation(coords); fetchWeatherData(pos.coords.latitude, pos.coords.longitude, false);
             clearTimeout(geoZoomTimer); geoZoomTimer = setTimeout(() => { setGeoMode('B'); }, 850);
@@ -150,81 +149,24 @@ function stopCompass() { window.removeEventListener('deviceorientationabsolute',
 function handleOrientation(e) { const cone = document.getElementById('headingCone'); if (!cone || geoMode !== 'C') return; let heading = null; if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) { heading = e.webkitCompassHeading; } else if ((e.absolute === true || e.type === 'deviceorientationabsolute') && e.alpha !== null) { heading = 360 - e.alpha; } if (heading !== null) { const mapBearing = map.getBearing(); const finalRotation = heading - mapBearing; cone.style.transform = `translateX(-50%) rotate(${Math.round(finalRotation)}deg)`; } }
 
 // ==========================================
-// 🗺️ MapTiler (初期45度斜め表示)
+// 🗺️ MapTiler
 // ==========================================
 const MAPTILER_KEY = "R7X03ziyuOxnZBBvDL0G";
-const map = new maplibregl.Map({
-    container: 'map',
-    style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`,
-    center: [139.8731, 35.6635],
-    zoom: 14,
-    pitch: 45, // 🌟 初期で45度の斜め視点を設定
-    attributionControl: false 
-});
+const map = new maplibregl.Map({ container: 'map', style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`, center: [139.8731, 35.6635], zoom: 14, pitch: 45, attributionControl: false });
 
 map.on('load', () => {
-    startLocationTracking();
-    jumpToCurrentLocation();
+    startLocationTracking(); jumpToCurrentLocation();
     
-    // 🌟 【ここに追加】初期起動時に、元からある3D建物をすべて強制オフにする
     const layers = map.getStyle().layers;
-    layers.forEach(layer => {
-        if (layer.type === 'fill-extrusion') {
-            map.setLayoutProperty(layer.id, 'visibility', 'none');
-        }
-    });
+    layers.forEach(layer => { if (layer.type === 'fill-extrusion') { map.setLayoutProperty(layer.id, 'visibility', 'none'); } });
 
     map.addSource('memos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
     map.addLayer({ id: 'clusters', type: 'circle', source: 'memos', filter: ['has', 'point_count'], paint: { 'circle-color': '#06C167', 'circle-radius': 18, 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
     map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'memos', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 14, 'text-font': ['Noto Sans Bold'] }, paint: { 'text-color': '#ffffff' } });
 
-    // 🌟 【ここも書き換え】3D建物のトグル処理（チェックボックスと連動）
     document.getElementById('chk3dBuilding').addEventListener('change', (e) => {
-        const show = e.target.checked;
-        const currentLayers = map.getStyle().layers;
-        currentLayers.forEach(layer => {
-            if (layer.type === 'fill-extrusion') {
-                map.setLayoutProperty(layer.id, 'visibility', show ? 'visible' : 'none');
-            }
-        });
-    });
-
-    // ... (これ以降の map.on('click', 'clusters') などはそのまま) ...
-    // 🌟 3D建物のトグル処理
-    document.getElementById('chk3dBuilding').addEventListener('change', (e) => {
-        const show = e.target.checked;
-        if (show) {
-            if (map.getLayer('3d-buildings')) {
-                map.setLayoutProperty('3d-buildings', 'visibility', 'visible');
-            } else {
-                // MapTilerのデフォルトソースを取得して3D建物を追加
-                const sources = map.getStyle().sources;
-                let sourceId = 'v3'; 
-                if (!sources['v3']) {
-                    sourceId = Object.keys(sources).find(k => sources[k].type === 'vector');
-                }
-                if (sourceId) {
-                    map.addLayer({
-                        'id': '3d-buildings',
-                        'source': sourceId,
-                        'source-layer': 'building',
-                        'filter': ['==', 'extrude', 'true'],
-                        'type': 'fill-extrusion',
-                        'minzoom': 15,
-                        'paint': {
-                            'fill-extrusion-color': '#e3e3e3',
-                            'fill-extrusion-height': ['*', ['get', 'render_height'], 1],
-                            'fill-extrusion-base': ['*', ['get', 'render_min_height'], 1],
-                            'fill-extrusion-opacity': 0.6
-                        }
-                    }, 'clusters'); // ピンなどの下に配置
-                }
-            }
-        } else {
-            if (map.getLayer('3d-buildings')) {
-                map.setLayoutProperty('3d-buildings', 'visibility', 'none');
-            }
-        }
+        const show = e.target.checked; const currentLayers = map.getStyle().layers;
+        currentLayers.forEach(layer => { if (layer.type === 'fill-extrusion') { map.setLayoutProperty(layer.id, 'visibility', show ? 'visible' : 'none'); } });
     });
 
     map.on('click', 'clusters', (e) => {
@@ -232,11 +174,68 @@ map.on('load', () => {
         map.getSource('memos').getClusterExpansionZoom(features[0].properties.cluster_id, (err, zoom) => { if (!err) map.easeTo({ center: features[0].geometry.coordinates, zoom: zoom }); });
     });
 
-    map.on('click', (e) => {
+    // 🌟 マップの空き地・建物をタップした時の処理
+    map.on('click', async (e) => {
+        // 🎯 建物指定モード中なら、API取得処理へ分岐
+        if (isPickingBuilding) {
+            isPickingBuilding = false;
+            targetLngLat = e.lngLat;
+            
+            // 🌟 3Dモードとカメラ角度を元に戻す
+            if (map.getLayer('3d-buildings')) {
+                map.setLayoutProperty('3d-buildings', 'visibility', was3dEnabledBeforePick ? 'visible' : 'none');
+            }
+            
+            // タップした場所にピンを移動し、パネルを戻す
+            if (tempPinMarker) {
+                tempPinMarker.setLngLat(targetLngLat);
+            } else {
+                const wrapper = document.createElement('div'); wrapper.className = 'marker-wrapper';
+                const pin = document.createElement('div'); pin.className = 'sharp-temp-pin pop-animation'; wrapper.appendChild(pin);
+                tempPinMarker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat(targetLngLat).addTo(map);
+            }
+            
+            map.flyTo({ center: targetLngLat, pitch: pitchBeforePick, zoom: 19, padding: { top: 90, bottom: 450, left: 0, right: 0 }, duration: 800 });
+            
+            // パネルを全開に戻す
+            const actionPanel = document.getElementById('memoActionPanel');
+            actionPanel.classList.remove('peek-low');
+            
+            // 🌟 Google API呼び出し
+            document.getElementById('memoBuildingName').value = "⏳ 取得中..."; document.getElementById('memoAddress').value = "⏳ 取得中...";
+            try {
+                const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${targetLngLat.lat},${targetLngLat.lng}&key=${GOOGLE_API_KEY}&language=ja`);
+                const data = await res.json();
+                let bName = ""; let address = "";
+                
+                if (data.status === "OK" && data.results.length > 0) {
+                    const bestResult = data.results[0];
+                    address = bestResult.formatted_address.replace(/^日本、\s*(〒\d{3}-\d{4}\s*)?/, '');
+                    
+                    const premise = bestResult.address_components.find(c => c.types.includes('premise') || c.types.includes('establishment'));
+                    if (premise) {
+                        bName = premise.long_name;
+                        address = address.replace(bName, '').trim();
+                    } else if (data.results.length > 1) {
+                        const poiResult = data.results.find(r => r.types.includes('point_of_interest') || r.types.includes('premise') || r.types.includes('establishment'));
+                        if (poiResult) { bName = poiResult.address_components[0].long_name; }
+                    }
+                }
+                document.getElementById('memoBuildingName').value = bName || "";
+                document.getElementById('memoAddress').value = address || "";
+            } catch(err) {
+                console.error(err);
+                document.getElementById('memoBuildingName').value = ""; document.getElementById('memoAddress').value = "";
+            }
+            return;
+        }
+
+        // 通常のマップクリック時
         const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
         if (!features.length) {
             const sheet = document.getElementById('memoBottomSheet'); if (sheet.classList.contains('show')) sheet.classList.add('peek');
-            document.getElementById('memoActionPanel').classList.remove('show'); document.getElementById('filterBottomSheet').classList.remove('show');
+            const actionPanel = document.getElementById('memoActionPanel'); if (actionPanel && actionPanel.classList.contains('show')) actionPanel.classList.add('peek');
+            document.getElementById('filterBottomSheet').classList.remove('show');
             if (tempPinMarker) { tempPinMarker.remove(); tempPinMarker = null; }
         }
     });
@@ -255,27 +254,17 @@ function updateMarkers() {
     
     for (const feature of features) {
         if (!feature.properties.cluster) {
-            const id = feature.properties.id;
-            const coords = feature.geometry.coordinates;
+            const id = feature.properties.id; const coords = feature.geometry.coordinates;
             
             if (!markersOnScreen[id]) {
-                const isSelected = feature.properties.isSelected;
-                const cat = feature.properties.category || '💡 その他';
+                const isSelected = feature.properties.isSelected; const cat = feature.properties.category || '💡 その他';
+                const wrapper = document.createElement('div'); wrapper.className = 'marker-wrapper';
+                const el = document.createElement('div'); el.className = `custom-memo-marker pop-animation ${isSelected ? 'selected' : ''}`;
                 
-                const wrapper = document.createElement('div');
-                wrapper.className = 'marker-wrapper';
-
-                const el = document.createElement('div');
-                el.className = `custom-memo-marker pop-animation ${isSelected ? 'selected' : ''}`;
-                
-                // 色は常にカテゴリカラーを維持し、CSS変数にセットして光のリング(box-shadow)に使う
                 el.style.backgroundColor = catColors[cat];
-                el.style.setProperty('--cat-color', catColors[cat]);
-                el.style.setProperty('--cat-color-alpha', hexToRgba(catColors[cat], 0.4));
+                el.style.setProperty('--cat-color', catColors[cat]); el.style.setProperty('--cat-color-alpha', hexToRgba(catColors[cat], 0.4));
                 el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="#FFFFFF">${catIconPaths[cat]}</svg>`;
-                
-                wrapper.appendChild(el);
-                const marker = new maplibregl.Marker({element: wrapper}).setLngLat(coords).addTo(map);
+                wrapper.appendChild(el); const marker = new maplibregl.Marker({element: wrapper}).setLngLat(coords).addTo(map);
                 
                 el.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -285,60 +274,85 @@ function updateMarkers() {
                     clickedMemos.forEach(f => { if (!uniqueIds.has(f.properties.id)) { uniqueIds.add(f.properties.id); currentGroupMemos.push(f.properties); } });
                     currentGroupIndex = 0; showCurrentGroupMemo();
                 });
-                
                 markersOnScreen[id] = { marker: marker, el: el };
             } else {
-                const markerObj = markersOnScreen[id];
-                const el = markerObj.el;
-                const isSelected = feature.properties.isSelected;
-                
-                // 🌟 色の反転を廃止し、クラスの付け外しだけでオーラを表現
-                if (isSelected && !el.classList.contains('selected')) {
-                    el.classList.add('selected');
-                } else if (!isSelected && el.classList.contains('selected')) {
-                    el.classList.remove('selected');
-                }
+                const markerObj = markersOnScreen[id]; const el = markerObj.el; const isSelected = feature.properties.isSelected;
+                if (isSelected && !el.classList.contains('selected')) { el.classList.add('selected'); } else if (!isSelected && el.classList.contains('selected')) { el.classList.remove('selected'); }
                 markerObj.marker.setLngLat(coords); 
             }
             newMarkers[id] = markersOnScreen[id];
         }
     }
-    for (const id in markersOnScreen) {
-        if (!newMarkers[id]) { markersOnScreen[id].marker.remove(); delete markersOnScreen[id]; }
-    }
+    for (const id in markersOnScreen) { if (!newMarkers[id]) { markersOnScreen[id].marker.remove(); delete markersOnScreen[id]; } }
 }
 map.on('render', updateMarkers);
 
 
 // ==========================================
-// 🔍 🌟 Nominatim (サジェスト検索)
+// 🔍 🌟 ハイブリッド検索 (Firebase内検索 ＋ Nominatim)
 // ==========================================
 const searchInput = document.getElementById('addressSearchInput');
 const searchSuggestions = document.getElementById('searchSuggestions');
 let searchTimeout = null;
 
-function formatJapaneseAddress(displayName) {
-    return displayName.split(', ').reverse().join(' ').replace(/日本/g, '').replace(/〒\d{3}-\d{4}/g, '').trim();
-}
+function formatJapaneseAddress(displayName) { return displayName.split(', ').reverse().join(' ').replace(/日本/g, '').replace(/〒\d{3}-\d{4}/g, '').trim(); }
 
 if (searchInput && searchSuggestions) {
     searchInput.addEventListener('input', (e) => {
-        const q = e.target.value.trim();
-        clearTimeout(searchTimeout);
+        const q = e.target.value.trim(); clearTimeout(searchTimeout);
         if (!q) { searchSuggestions.style.display = 'none'; return; }
         
         searchTimeout = setTimeout(async () => {
+            searchSuggestions.innerHTML = '';
+            let hasResults = false;
+
+            // 🌟 1. Firebase内のみんなのメモから瞬時に検索
+            const localMatches = allMemosData.filter(m => {
+                if (!q) return false;
+                const matchText = (m.buildingName || "") + " " + (m.address || "") + " " + (m.text || "");
+                return matchText.toLowerCase().includes(q.toLowerCase());
+            }).slice(0, 3);
+
+            if (localMatches.length > 0) {
+                hasResults = true;
+                const groupLabel = document.createElement('div');
+                groupLabel.style.padding = '8px 16px'; groupLabel.style.fontSize = '0.8em'; groupLabel.style.background = '#E8F0FE'; groupLabel.style.color = '#1A73E8'; groupLabel.style.fontWeight = 'bold';
+                groupLabel.textContent = '📝 みんなの攻略メモ';
+                searchSuggestions.appendChild(groupLabel);
+
+                localMatches.forEach(m => {
+                    const div = document.createElement('div'); div.className = 'suggestion-item';
+                    const emoji = m.category ? m.category.substring(0, 2) : "📍";
+                    const title = m.buildingName || "メモ情報";
+                    const sub = m.address || m.text.substring(0, 15);
+                    div.innerHTML = `<span class="suggestion-icon">${emoji}</span><div style="line-height:1.4;"><strong>${title}</strong><br><span style="font-size:0.8em;color:#5F6368;">${sub}</span></div>`;
+                    div.onclick = () => {
+                        map.flyTo({ center: [m.lng, m.lat], zoom: 18 });
+                        searchSuggestions.style.display = 'none'; searchInput.blur();
+                        openMemoBottomSheet(m);
+                    };
+                    searchSuggestions.appendChild(div);
+                });
+            }
+
+            // 🌟 2. Nominatim（世界地図データ）を検索
             try {
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=jp&addressdetails=1&limit=5`);
                 const data = await res.json();
                 
-                searchSuggestions.innerHTML = '';
                 if (data.length > 0) {
+                    hasResults = true;
+                    if (localMatches.length > 0) {
+                        const groupLabel = document.createElement('div');
+                        groupLabel.style.padding = '8px 16px'; groupLabel.style.fontSize = '0.8em'; groupLabel.style.background = '#F1F3F4'; groupLabel.style.color = '#5F6368'; groupLabel.style.fontWeight = 'bold';
+                        groupLabel.textContent = '📍 地図・住所';
+                        searchSuggestions.appendChild(groupLabel);
+                    }
+
                     data.forEach(item => {
                         const div = document.createElement('div'); div.className = 'suggestion-item';
                         const formattedAddress = formatJapaneseAddress(item.display_name);
                         const nameHtml = item.name ? `<strong>${item.name}</strong><br><span style="font-size:0.8em;color:#5F6368;">${formattedAddress}</span>` : formattedAddress;
-                        
                         div.innerHTML = `<span class="suggestion-icon">📍</span><div style="line-height:1.4;">${nameHtml}</div>`;
                         div.onclick = () => {
                             map.flyTo({ center: [parseFloat(item.lon), parseFloat(item.lat)], zoom: 16 });
@@ -347,9 +361,10 @@ if (searchInput && searchSuggestions) {
                         };
                         searchSuggestions.appendChild(div);
                     });
-                    searchSuggestions.style.display = 'block';
-                } else { searchSuggestions.style.display = 'none'; }
+                }
             } catch(err) { console.error("検索エラー:", err); }
+            
+            if (hasResults) { searchSuggestions.style.display = 'block'; } else { searchSuggestions.style.display = 'none'; }
         }, 500); 
     });
 
@@ -357,6 +372,18 @@ if (searchInput && searchSuggestions) {
         if(e.key === 'Enter') {
             const q = searchInput.value.trim(); if (!q) return;
             try {
+                const localMatch = allMemosData.find(m => {
+                    const matchText = (m.buildingName || "") + " " + (m.address || "") + " " + (m.text || "");
+                    return matchText.toLowerCase().includes(q.toLowerCase());
+                });
+                
+                if (localMatch) {
+                    map.flyTo({ center: [localMatch.lng, localMatch.lat], zoom: 18 });
+                    searchSuggestions.style.display = 'none'; searchInput.blur();
+                    openMemoBottomSheet(localMatch);
+                    return;
+                }
+
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=jp&limit=1`);
                 const data = await res.json();
                 if(data.length > 0) {
@@ -376,24 +403,64 @@ const geoBackBtn = document.getElementById('geoBackBtn');
 if (geoBackBtn) { geoBackBtn.addEventListener('click', () => { if (geoMode === 'A') { jumpToCurrentLocation(); } else if (geoMode === 'B') { map.flyTo({ zoom: 20, duration: 800 }); setGeoMode('C'); } else if (geoMode === 'C') { setGeoMode('B'); } }); }
 
 // ==========================================
-// 📝 🌟 爆速ワンタップメモ
+// 📝 🌟 メモUIアクション関連
 // ==========================================
 const btnQuickMemo = document.getElementById('btnQuickMemo');
 if (btnQuickMemo) {
     btnQuickMemo.addEventListener('click', () => {
         const coords = currentWatchCoords || (currentLocationMarker ? [currentLocationMarker.getLngLat().lng, currentLocationMarker.getLngLat().lat] : null);
-        if (coords) {
-            openMemoAddSheet({ lng: coords[0], lat: coords[1] }, true);
-        } else {
-            openMemoAddSheet(null, false);
-        }
+        if (coords) { openMemoAddSheet({ lng: coords[0], lat: coords[1] }, true); } else { openMemoAddSheet(null, false); }
     });
+}
+
+// 🌟 建物を指定ボタンの処理（一時的3Dモード ＆ パネル完全退避）
+document.getElementById('btnPickBuilding').addEventListener('click', () => {
+    isPickingBuilding = true;
+    const actionPanel = document.getElementById('memoActionPanel');
+    actionPanel.classList.remove('peek');
+    actionPanel.classList.add('peek-low'); 
+    
+    // 現在の3D状態と角度を記憶
+    was3dEnabledBeforePick = document.getElementById('chk3dBuilding').checked;
+    pitchBeforePick = map.getPitch();
+
+    // 一時的に3Dモードを強制ON＆カメラを深く寝かせる
+    if (map.getLayer('3d-buildings')) {
+        map.setLayoutProperty('3d-buildings', 'visibility', 'visible');
+    }
+    map.easeTo({ pitch: 60, duration: 800 });
+    
+    // トーストで案内を出す
+    const toast = document.getElementById('materialToast');
+    const originalHtml = toast.innerHTML;
+    toast.innerHTML = `<div class="toast-icon">🎯</div><div class="toast-text" style="line-height:1.4;">3Dの建物モデルを<br>タップしてください</div>`;
+    toast.classList.add('show');
+    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.innerHTML = originalHtml, 500); }, 3500);
+});
+
+// パネルをタップした時の制御（下がりきった状態からでも元に戻せるように）
+const actionPanel = document.getElementById('memoActionPanel');
+if (actionPanel) { 
+    actionPanel.addEventListener('click', (e) => { 
+        if (e.target.id !== 'btnCancelForm' && (actionPanel.classList.contains('peek') || actionPanel.classList.contains('peek-low'))) { 
+            actionPanel.classList.remove('peek'); 
+            if (actionPanel.classList.contains('peek-low')) {
+                actionPanel.classList.remove('peek-low');
+                if (isPickingBuilding) {
+                    isPickingBuilding = false;
+                    if (map.getLayer('3d-buildings')) { map.setLayoutProperty('3d-buildings', 'visibility', was3dEnabledBeforePick ? 'visible' : 'none'); }
+                    map.easeTo({ pitch: pitchBeforePick, duration: 800 });
+                }
+            }
+        } 
+    }); 
 }
 
 function handleMapInteraction(e) {
     if (!e.originalEvent) return; clearTimeout(geoZoomTimer); if (geoMode !== 'C') setGeoMode('A');
     const sheet = document.getElementById('memoBottomSheet'); if (sheet && sheet.classList.contains('show')) sheet.classList.add('peek'); 
-    const actionPanel = document.getElementById('memoActionPanel'); if (actionPanel && actionPanel.classList.contains('show')) actionPanel.classList.add('peek');
+    const panel = document.getElementById('memoActionPanel'); 
+    if (panel && panel.classList.contains('show') && !panel.classList.contains('peek-low')) panel.classList.add('peek');
 }
 map.on('dragstart', handleMapInteraction); map.on('zoomstart', handleMapInteraction);
 
@@ -462,8 +529,14 @@ function openMemoAddSheet(lngLat, zoomIn = false) {
     
     document.getElementById('memoBottomSheet').classList.remove('show'); 
     document.getElementById('filterBottomSheet').classList.remove('show'); 
-    const actionPanel = document.getElementById('memoActionPanel'); 
-    actionPanel.classList.remove('peek'); actionPanel.classList.add('show');
+    const panel = document.getElementById('memoActionPanel'); 
+    panel.classList.remove('peek'); panel.classList.remove('peek-low'); panel.classList.add('show');
+    
+    // 🌟 建物入力欄のリセットと表示判定
+    document.getElementById('memoBuildingName').value = "";
+    document.getElementById('memoAddress').value = "";
+    const catInput = document.querySelector('input[name="memoCatInput"]:checked');
+    document.getElementById('buildingInputSection').style.display = (catInput && catInput.value === '🏢 建物・入口') ? 'block' : 'none';
     
     if (lngLat) {
         const wrapper = document.createElement('div'); wrapper.className = 'marker-wrapper';
@@ -482,7 +555,24 @@ function openMemoAddSheet(lngLat, zoomIn = false) {
     }
 }
 
-const closeMemoForm = () => { const actionPanel = document.getElementById('memoActionPanel'); actionPanel.classList.remove('show'); actionPanel.classList.remove('peek'); document.getElementById('btnRemoveImage').click(); document.getElementById('memoTextInput').value = ""; editingMemoId = null; if (tempPinMarker) { tempPinMarker.remove(); tempPinMarker = null; } };
+const closeMemoForm = () => { 
+    const panel = document.getElementById('memoActionPanel'); 
+    panel.classList.remove('show'); panel.classList.remove('peek'); panel.classList.remove('peek-low');
+    
+    // 🌟 選択モード中にキャンセルした場合の後始末
+    if (isPickingBuilding) {
+        if (map.getLayer('3d-buildings')) { map.setLayoutProperty('3d-buildings', 'visibility', was3dEnabledBeforePick ? 'visible' : 'none'); }
+        map.easeTo({ pitch: pitchBeforePick, duration: 800 });
+        isPickingBuilding = false;
+    }
+
+    document.getElementById('btnRemoveImage').click(); 
+    document.getElementById('memoTextInput').value = ""; 
+    document.getElementById('memoBuildingName').value = ""; 
+    document.getElementById('memoAddress').value = ""; 
+    editingMemoId = null; 
+    if (tempPinMarker) { tempPinMarker.remove(); tempPinMarker = null; } 
+};
 document.getElementById('btnCancelForm').addEventListener('click', closeMemoForm);
 
 async function handleMemoImage(file, btnTextId, defaultText) {
@@ -498,14 +588,20 @@ document.getElementById('memoImageInput').addEventListener('change', (e) => hand
 document.getElementById('btnRemoveImage').addEventListener('click', () => { selectedImageDataUrls = []; document.getElementById('memoImageInput').value = ""; document.getElementById('memoCameraInput').value = ""; document.getElementById('memoImagePreviewContainer').style.display = 'none'; document.getElementById('memoCameraBtnText').parentNode.style.display = 'inline-block'; document.getElementById('memoImageBtnText').parentNode.style.display = 'inline-block'; const countLabel = document.getElementById('memoImageCountLabel'); if(countLabel) countLabel.textContent = ""; });
 
 document.getElementById('btnSaveMemo').addEventListener('click', async () => {
-    const text = document.getElementById('memoTextInput').value.trim(); if (!text && selectedImageDataUrls.length === 0) { alert("入力必須です"); return; }
+    const text = document.getElementById('memoTextInput').value.trim(); 
+    const catInput = document.querySelector('input[name="memoCatInput"]:checked'); const category = catInput ? catInput.value : '💡 その他';
     
-    if (!targetLngLat) {
-        alert("現在地を取得中です。電波の良い場所で再度お試しください。");
-        return;
+    // 🌟 建物カテゴリ時は名前かテキスト必須
+    let bName = ""; let addr = "";
+    if (category === '🏢 建物・入口') {
+        bName = document.getElementById('memoBuildingName').value.trim();
+        addr = document.getElementById('memoAddress').value.trim();
     }
 
-    const catInput = document.querySelector('input[name="memoCatInput"]:checked'); const category = catInput ? catInput.value : '💡 その他';
+    if (!text && !bName && selectedImageDataUrls.length === 0) { alert("入力必須です"); return; }
+    
+    if (!targetLngLat) { alert("現在地を取得中です。電波の良い場所で再度お試しください。"); return; }
+
     const isShowName = document.getElementById('chkShowName').checked; const finalSenderName = isShowName ? myProfileName : "匿名ドライバー";
     const saveBtn = document.getElementById('btnSaveMemo'); saveBtn.disabled = true; saveBtn.textContent = "⏳ 送信中";
     
@@ -515,7 +611,15 @@ document.getElementById('btnSaveMemo').addEventListener('click', async () => {
             const dataUrl = selectedImageDataUrls[i];
             if (dataUrl.startsWith('http')) { finalUrls.push(dataUrl); } else { const storageRef = ref(storage, `memos/${Date.now()}_${currentUserId}_${i}.jpg`); await uploadString(storageRef, dataUrl, 'data_url'); finalUrls.push(await getDownloadURL(storageRef)); }
         }
-        const memoData = { lat: targetLngLat.lat, lng: targetLngLat.lng, category: category, text: text, imageUrls: finalUrls, imageUrl: finalUrls.length > 0 ? finalUrls[0] : null, senderId: currentUserId, senderName: finalSenderName, updatedAt: Date.now() };
+        
+        // 🌟 buildingName と address を保存データに追加
+        const memoData = { 
+            lat: targetLngLat.lat, lng: targetLngLat.lng, 
+            category: category, text: text, 
+            buildingName: bName, address: addr,
+            imageUrls: finalUrls, imageUrl: finalUrls.length > 0 ? finalUrls[0] : null, 
+            senderId: currentUserId, senderName: finalSenderName, updatedAt: Date.now() 
+        };
 
         if (editingMemoId) { await updateDoc(doc(db, "memos", editingMemoId), memoData); } 
         else { memoData.likesCount = 0; memoData.reportCount = 0; memoData.createdAt = Date.now(); await addDoc(collection(db, "memos"), memoData); }
@@ -523,10 +627,7 @@ document.getElementById('btnSaveMemo').addEventListener('click', async () => {
         closeMemoForm(); await loadMemosToMap();
 
         const toast = document.getElementById('materialToast');
-        if (toast) {
-            toast.classList.add('show');
-            setTimeout(() => { toast.classList.remove('show'); }, 3500);
-        }
+        if (toast) { toast.classList.add('show'); setTimeout(() => { toast.classList.remove('show'); }, 3500); }
 
     } catch (e) { alert("エラーが発生しました"); } finally { saveBtn.disabled = false; saveBtn.textContent = "投稿する"; }
 });
@@ -566,7 +667,15 @@ function showCurrentGroupMemo() {
 function openMemoBottomSheet(props) {
     currentOpenMemoId = props.id; applyFilters(); const fullData = allMemosData.find(m => m.id === props.id); if(!fullData) return;
 
-    document.getElementById('sheetCategory').textContent = fullData.category; document.getElementById('sheetText').textContent = fullData.text;
+    document.getElementById('sheetCategory').textContent = fullData.category; 
+    
+    // 🌟 取得した建物名や住所を見やすく結合して表示
+    let textContent = "";
+    if (fullData.buildingName) textContent += `🏢 ${fullData.buildingName}\n`;
+    if (fullData.address) textContent += `📍 ${fullData.address}\n\n`;
+    textContent += fullData.text || "";
+    document.getElementById('sheetText').textContent = textContent.trim() || "メモがありません";
+
     const diffMin = Math.floor((Date.now() - fullData.createdAt) / 60000); let timeStr = "たった今";
     if (diffMin >= 60 * 24) timeStr = `${Math.floor(diffMin / (60 * 24))}日前`; else if (diffMin >= 60) timeStr = `${Math.floor(diffMin / 60)}時間前`; else if (diffMin > 0) timeStr = `${diffMin}分前`;
     document.getElementById('sheetTime').textContent = timeStr; document.getElementById('sheetAuthorName').textContent = fullData.senderName; document.getElementById('sheetLikeCount').textContent = fullData.likesCount || 0;
@@ -600,7 +709,18 @@ document.getElementById('btnEditMemo')?.addEventListener('click', () => {
     const memoData = allMemosData.find(m => m.id === currentOpenMemoId); if(!memoData) return;
     editingMemoId = currentOpenMemoId; targetLngLat = { lat: memoData.lat, lng: memoData.lng };
     document.getElementById('memoTextInput').value = memoData.text || "";
-    const catInputs = document.querySelectorAll('input[name="memoCatInput"]'); catInputs.forEach(input => { if (input.value === memoData.category) input.checked = true; });
+    
+    // 🌟 編集時に建物名と住所をセット
+    document.getElementById('memoBuildingName').value = memoData.buildingName || "";
+    document.getElementById('memoAddress').value = memoData.address || "";
+    
+    const catInputs = document.querySelectorAll('input[name="memoCatInput"]'); 
+    catInputs.forEach(input => { 
+        if (input.value === memoData.category) { 
+            input.checked = true; 
+            document.getElementById('buildingInputSection').style.display = input.value === '🏢 建物・入口' ? 'block' : 'none';
+        } 
+    });
 
     selectedImageDataUrls = memoData.imageUrls || (memoData.imageUrl ? [memoData.imageUrl] : []);
     if (selectedImageDataUrls.length > 0) { document.getElementById('memoImagePreview').src = selectedImageDataUrls[0]; document.getElementById('memoImagePreviewContainer').style.display = 'block'; let countLabel = document.getElementById('memoImageCountLabel'); if(!countLabel) { countLabel = document.createElement('div'); countLabel.id = 'memoImageCountLabel'; countLabel.style.textAlign = 'center'; countLabel.style.fontSize = '12px'; countLabel.style.color = '#1A73E8'; countLabel.style.fontWeight = 'bold'; countLabel.style.marginTop = '4px'; document.getElementById('memoImagePreviewContainer').appendChild(countLabel); } countLabel.textContent = `${selectedImageDataUrls.length}枚選択中 (最大3枚)`; if (selectedImageDataUrls.length < 3) { document.getElementById('memoCameraBtnText').parentNode.style.display = 'inline-block'; document.getElementById('memoImageBtnText').parentNode.style.display = 'inline-block'; } else { document.getElementById('memoCameraBtnText').parentNode.style.display = 'none'; document.getElementById('memoImageBtnText').parentNode.style.display = 'none'; } } else { document.getElementById('btnRemoveImage').click(); }
@@ -631,9 +751,6 @@ memoSheet.addEventListener('click', (e) => { if (e.target.id !== 'btnCloseMemoSh
 
 const btnCloseSheet = document.getElementById('btnCloseMemoSheet');
 if (btnCloseSheet) { btnCloseSheet.addEventListener('click', (e) => { e.stopPropagation(); memoSheet.classList.remove('show'); memoSheet.classList.remove('peek'); const navBar = document.getElementById('memoGroupNav'); if (navBar) navBar.style.display = 'none'; currentOpenMemoId = null; applyFilters(); }); }
-
-const actionPanel = document.getElementById('memoActionPanel');
-if (actionPanel) { actionPanel.addEventListener('click', (e) => { if (e.target.id !== 'btnCancelForm' && actionPanel.classList.contains('peek')) { actionPanel.classList.remove('peek'); } }); }
 
 async function fetchWeatherData(lat, lng, isCustom = false) {
     try {
