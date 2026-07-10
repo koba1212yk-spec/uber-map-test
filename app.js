@@ -184,6 +184,7 @@ function handleOrientation(e) { const cone = document.getElementById('headingCon
 const MAPTILER_KEY = "R7X03ziyuOxnZBBvDL0G";
 const map = new maplibregl.Map({ container: 'map', style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`, center: [139.8731, 35.6635], zoom: 14, pitch: 45, attributionControl: false });
 
+
 map.on('load', () => {
     startLocationTracking(); jumpToCurrentLocation();
     
@@ -191,12 +192,56 @@ map.on('load', () => {
     layers.forEach(layer => { if (layer.type === 'fill-extrusion') { map.setLayoutProperty(layer.id, 'visibility', 'none'); } });
 
     map.addSource('memos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
+    
+ // 🌟 マップ内部から「正確な建物データソース」を確実に抽出する
+    let buildingSourceId = 'maptiler_planet'; 
+    let buildingSourceLayer = 'building';
+    
+    const existingBuildingLayer = layers.find(l => l['source-layer'] === 'building' || (l.id && l.id.includes('building')));
+    if (existingBuildingLayer && existingBuildingLayer.source) {
+        buildingSourceId = existingBuildingLayer.source;
+        if (existingBuildingLayer['source-layer']) {
+            buildingSourceLayer = existingBuildingLayer['source-layer'];
+        }
+    }
+
+    // 🌟 追加：地名の文字（シンボル）の下に潜り込ませるための準備
+    let firstSymbolId = null;
+    for (const layer of layers) {
+        if (layer.type === 'symbol') { // 文字やアイコンのレイヤーを見つけたら
+            firstSymbolId = layer.id;  // そのIDを記憶する
+            break;
+        }
+    }
+
+    // 🌟 エラー解消＆文字被り解消！2D平面図レイヤーを追加
+    if (map.getSource(buildingSourceId)) {
+        map.addLayer({
+            'id': 'building-footprint',
+            'type': 'fill',
+            'source': buildingSourceId,
+            'source-layer': buildingSourceLayer,
+            'minzoom': 13, 
+            'paint': {
+                'fill-color': '#e8e8e8', // 🌟 さらに薄くて明るいグレーに変更
+                'fill-opacity': 0.6,     // 🌟 透明度を下げて背景の道路と馴染ませる
+                'fill-outline-color': '#e0e0e0' // 🌟 枠線も極力薄くしてノイズを減らす
+            }
+        }, firstSymbolId); // 🌟 ここが超重要！「文字（firstSymbolId）の下に敷け」という指定
+    }
+
+    // その後にピン（clusters）を追加
     map.addLayer({ id: 'clusters', type: 'circle', source: 'memos', filter: ['has', 'point_count'], paint: { 'circle-color': '#06C167', 'circle-radius': 18, 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
     map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'memos', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 14, 'text-font': ['Noto Sans Bold'] }, paint: { 'text-color': '#ffffff' } });
 
     document.getElementById('chk3dBuilding').addEventListener('change', (e) => {
         const show = e.target.checked; const currentLayers = map.getStyle().layers;
         currentLayers.forEach(layer => { if (layer.type === 'fill-extrusion') { map.setLayoutProperty(layer.id, 'visibility', show ? 'visible' : 'none'); } });
+        
+        // 3DがONの時は平面図を消し、OFFの時は平面図を出す
+        if (map.getLayer('building-footprint')) {
+            map.setLayoutProperty('building-footprint', 'visibility', show ? 'none' : 'visible');
+        }
     });
 
     map.on('click', 'clusters', (e) => {
@@ -205,7 +250,6 @@ map.on('load', () => {
     });
 
     map.on('click', async (e) => {
-        // 🎯 建物指定モード中は通常タップ操作を無効にする（誤タップ防止）
         if (targetMode === 'building') return;
 
         const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
@@ -222,6 +266,13 @@ map.on('load', () => {
 
     loadMemosToMap();
 });
+
+
+
+
+
+
+
 
 // 🌟 ピンの描画
 function updateMarkers() {
@@ -364,6 +415,8 @@ if (btnQuickMemo) {
 }
 
 
+
+
 // 🎯「地図をタップして建物を指定」ボタンの処理（本家Googleマップを被せる究極版）
 document.getElementById('btnPickBuilding').addEventListener('click', async () => {
     // 1. Googleマップのライブラリをロード
@@ -450,6 +503,7 @@ document.getElementById('btnPickBuilding').addEventListener('click', async () =>
     // 🌟 追加ここまで（この下は元々の gMap.addListener('click', ...) が続きます）
 
 
+   
     // 5. Googleマップ上で「建物（POI）」がタップされた瞬間をフックする
     gMap.addListener('click', async (event) => {
         // 建物や店舗（Place IDを持っている場所）をタップした場合
@@ -459,7 +513,7 @@ document.getElementById('btnPickBuilding').addEventListener('click', async () =>
             const service = new google.maps.places.PlacesService(gMap);
             service.getDetails({
                 placeId: event.placeId,
-                fields: ['name', 'formatted_address', 'geometry'],
+                fields: ['name', 'formatted_address'], // 🌟 座標（geometry）はもう受け取らない
                 language: 'ja'
             }, (place, status) => {
                 if (status === google.maps.places.PlacesServiceStatus.OK && place) {
@@ -475,16 +529,7 @@ document.getElementById('btnPickBuilding').addEventListener('click', async () =>
                     document.getElementById('memoBuildingName').value = bName;
                     document.getElementById('memoAddress').value = address;
 
-                    // ピンのターゲット座標をタップした建物の中心に完全同期
-                    targetLngLat = { lng: place.geometry.location.lng(), lat: place.geometry.location.lat() };
-                    if (tempPinMarker) {
-                        tempPinMarker.setLngLat(targetLngLat);
-                    } else {
-                        const wrapper = document.createElement('div'); wrapper.className = 'marker-wrapper';
-                        const pin = document.createElement('div'); pin.className = 'sharp-temp-pin pop-animation'; wrapper.appendChild(pin);
-                        tempPinMarker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom' }).setLngLat(targetLngLat).addTo(map);
-                    }
-                    map.setCenter(targetLngLat);
+                    // 🌟 【修正】ピンを動かす処理（targetLngLatの上書き等）を完全に削除しました
 
                     // 役目を終えたGoogleマップをスッと消去して戻る
                     gMapDiv.remove();
@@ -500,9 +545,7 @@ document.getElementById('btnPickBuilding').addEventListener('click', async () =>
                     document.getElementById('memoBuildingName').value = "";
                     document.getElementById('memoAddress').value = address;
 
-                    targetLngLat = { lng: event.latLng.lng(), lat: event.latLng.lat() };
-                    if (tempPinMarker) tempPinMarker.setLngLat(targetLngLat);
-                    map.setCenter(targetLngLat);
+                    // 🌟 【修正】ここでもピンを動かす処理を完全に削除しました
 
                     gMapDiv.remove();
                 }
