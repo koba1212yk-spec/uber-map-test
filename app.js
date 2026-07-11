@@ -899,3 +899,135 @@ document.getElementById('btnCheckTraffic').addEventListener('click', () => {
 });
 
 document.querySelectorAll('.accordion-header').forEach(button => { button.addEventListener('click', () => { const content = button.nextElementSibling; button.classList.toggle('active'); if (button.classList.contains('active')) { content.style.maxHeight = content.scrollHeight + "px"; } else { content.style.maxHeight = null; } }); });
+
+
+
+
+// =========================================================
+// 🌟 周辺の建物を自動検索 ＆ リスト表示機能
+// =========================================================
+
+// 🌟 2点間の距離（メートル）を正確に計算する計算式
+function calcDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371e3; // 地球の半径
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// 1. 「🔍 周辺の建物を自動検索」ボタンを押した時の処理（🌟真の近い順版🌟）
+document.getElementById('btnSearchNearby').addEventListener('click', async () => {
+    if (!tempPinMarker) {
+        alert('先に地図上でメモしたい場所（ピン）を刺してください！');
+        return;
+    }
+    
+    const btn = document.getElementById('btnSearchNearby');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '🔄 検索中...';
+    btn.disabled = true;
+
+    try {
+        if (typeof loadGoogleMapsScript === 'function') {
+            await loadGoogleMapsScript();
+        }
+
+        const lngLat = tempPinMarker.getLngLat();
+        const center = new google.maps.LatLng(lngLat.lat, lngLat.lng);
+        const pinLat = lngLat.lat;
+        const pinLng = lngLat.lng;
+
+        const dummyDiv = document.createElement('div');
+        const service = new google.maps.places.PlacesService(dummyDiv);
+        
+        const request = {
+            location: center,
+            radius: 100, // 100mの範囲でガッツリ拾う
+        };
+
+        service.nearbySearch(request, (results, status) => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+
+            const listContainer = document.getElementById('nearbyList');
+            listContainer.innerHTML = '';
+
+            if (status === google.maps.places.PlacesServiceStatus.OK && results.length > 0) {
+                
+                // 【ステップ1】行政エリア（東京・江戸川区など）のゴミを除外
+                let filteredResults = results.filter(place => {
+                    if (!place.types) return true;
+                    return !place.types.some(t => 
+                        ['political', 'locality', 'administrative_area_level_1', 'administrative_area_level_2', 'sublocality'].includes(t)
+                    );
+                });
+
+                // 🌟 【ステップ2】ピンからの本当の距離を計算して、「絶対に距離が近い順」に並び替える！
+                filteredResults.sort((a, b) => {
+                    const distA = calcDistance(pinLat, pinLng, a.geometry.location.lat(), a.geometry.location.lng());
+                    const distB = calcDistance(pinLat, pinLng, b.geometry.location.lat(), b.geometry.location.lng());
+                    return distA - distB;
+                });
+
+                // 【ステップ3】近い順になったリストの上位10件を表示する
+                if (filteredResults.length > 0) {
+                    const maxResults = Math.min(filteredResults.length, 20);
+                    for (let i = 0; i < maxResults; i++) {
+                        const place = filteredResults[i];
+                        
+                        const button = document.createElement('button');
+                        button.className = 'candidate-item';
+                        
+                        let bName = place.name || "";
+                        let address = place.vicinity || "";
+
+                        button.innerHTML = `<strong>🏢 ${bName}</strong><br><span style="font-size: 13px; color: #888;">${address}</span>`;
+                        
+                        button.addEventListener('click', () => {
+                            document.getElementById('memoBuildingName').value = bName;
+                            let cleanAddress = address.replace(/^日本、\s*(〒\d{3}-\d{4}\s*)?/, '');
+                            document.getElementById('memoAddress').value = cleanAddress;
+                            document.getElementById('nearbyCandidateSheet').classList.remove('show');
+                        });
+                        
+                        listContainer.appendChild(button);
+                    }
+                } else {
+                    listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #888;">周辺に建物が見つかりませんでした。<br>「マップをタップで探す」をお試しください。</div>';
+                }
+            } else {
+                listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #888;">周辺に建物が見つかりませんでした。<br>「マップをタップで探す」をお試しください。</div>';
+            }
+
+            document.getElementById('nearbyCandidateSheet').classList.add('show');
+        });
+
+    } catch (error) {
+        console.error('検索中にエラーが発生しました:', error);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        alert('エラーが発生しました。通信環境を確認してください。');
+    }
+});
+
+
+
+// 2. 右上の「✕（閉じる）」ボタンを押した時の処理
+document.getElementById('btnCloseNearby').addEventListener('click', () => {
+    document.getElementById('nearbyCandidateSheet').classList.remove('show');
+});
+
+// 3. 「🗺️ マップをタップで探す」ボタンを押した時の処理（保険機能）
+document.getElementById('btnMapTapSearch').addEventListener('click', () => {
+    // まずこのリスト画面を閉じる
+    document.getElementById('nearbyCandidateSheet').classList.remove('show');
+    
+    // 以前作った「手動でマップから探すボタン（隠してあるやつ）」をシステム側でこっそり押して機能を使い回す
+    const pickBtn = document.getElementById('btnPickBuilding');
+    if (pickBtn) {
+        pickBtn.click();
+    }
+});

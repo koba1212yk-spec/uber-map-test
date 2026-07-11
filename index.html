@@ -97,10 +97,17 @@
                 <label class="cat-chip"><input type="radio" name="memoCatInput" value="💡 その他"><span>💡 その他</span></label>
             </div>
 
+            <!-- 🌟 ここが修正された入力フォーム部分です 🌟 -->
             <div id="buildingInputSection" style="margin-top: 10px; padding: 12px; background: #F8F9FA; border-radius: 8px; border: 1px solid #E8EAED;">
-                <button id="btnPickBuilding" class="btn-outline-blue" style="width: 100%; padding: 8px; font-size: 0.9em; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                
+                <!-- 🌟 新しい検索ボタンを追加！ -->
+                <button type="button" id="btnSearchNearby" class="nearby-btn" style="width: 100%; padding: 10px; background: #eefdf4; color: #06C167; border: 1px solid #06C167; border-radius: 8px; margin-bottom: 10px; font-weight: bold; cursor: pointer;">🔍 周辺の建物を自動検索</button>
+                
+                <!-- 既存の「地図をタップ」ボタンは候補リスト画面に移すため、ここでは非表示にして裏方として残します -->
+                <button id="btnPickBuilding" class="btn-outline-blue" style="display: none; width: 100%; padding: 8px; font-size: 0.9em; margin-bottom: 12px; align-items: center; justify-content: center; gap: 6px;">
                     🎯 地図をタップして建物を指定
                 </button>
+
                 <input type="text" id="memoBuildingName" placeholder="建物名 (例: 豊洲レジデンス)" style="margin-bottom: 8px; background: #FFFFFF; font-size: 0.9em; padding: 10px;">
                 <input type="text" id="memoAddress" placeholder="住所 (例: 東京都江東区豊洲4丁目X-X)" style="margin-bottom: 0; font-size: 0.85em; background: #FFFFFF; color: #5F6368; padding: 10px;">
             </div>
@@ -153,6 +160,7 @@
             <div class="category-selector" id="filterCategoryContainer"></div>
         </div>
 
+        <!-- 既存の「メモを見る画面」 -->
         <div id="memoBottomSheet" class="bottom-sheet">
             <button id="btnCloseMemoSheet" class="btn-close-sheet">✕</button>
             <div class="drag-handle"></div>
@@ -192,7 +200,20 @@
                         <button id="btnDeleteMemo" class="btn-manage delete">🗑️ 削除</button>
                     </div>
                 </div>
+            </div>
+        </div>
 
+        <!-- 🌟 追加した「周辺の建物候補リスト画面」 🌟 -->
+        <div id="nearbyCandidateSheet" class="bottom-sheet">
+            <div class="sheet-header">
+                <span>📍 周辺の建物候補</span>
+                <button id="btnCloseNearby" class="btn-close-sheet">✕</button>
+            </div>
+            <div class="sheet-content">
+                <button id="btnMapTapSearch" class="candidate-item map-search-btn">🗺️ マップをタップで探す</button>
+                <div id="nearbyList" class="candidate-list">
+                    <!-- ここに候補リストが生成されます -->
+                </div>
             </div>
         </div>
 
