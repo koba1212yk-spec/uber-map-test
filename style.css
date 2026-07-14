@@ -43,12 +43,10 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100dvh; font-family: "G
     border-radius: 50%; 
     box-shadow: 0 1px 4px rgba(0,0,0,0.3); 
     position: relative; 
-    z-index: 9999 !important; /* 🌟 これを追加（ピンより絶対に手前にする） */
+    z-index: 9999 !important;
 }
 .current-location-dot::after { content: ''; position: absolute; top: -14px; left: -14px; width: 40px; height: 40px; background-color: rgba(66, 133, 244, 0.4); border-radius: 50%; animation: pulse-blue 2s infinite ease-out; }
 @keyframes pulse-blue { 0% { transform: scale(0.2); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
-
-
 
 /* 🌟 MapLibreが動かすための外箱 */
 .marker-wrapper { display: flex; justify-content: center; align-items: center; }
@@ -56,14 +54,13 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100dvh; font-family: "G
 /* 📍 仮ピン */
 .sharp-temp-pin { width: 28px; height: 40px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36"><path fill="%23EA4335" d="M12 0C5.37 0 0 5.37 0 12c0 9 12 24 12 24s12-15 12-24c0-6.63-5.37-12-12-12zm0 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center bottom; filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.3)); }
 
-/* 🌟 案A：ポワッと光るリングのアニメーション */
 .custom-memo-marker { width: 32px; height: 32px; border-radius: 50%; border: 3px solid #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 2; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease; }
 .custom-memo-marker.selected { z-index: 3; transform: scale(1.25); box-shadow: 0 0 0 5px var(--cat-color-alpha), 0 0 16px var(--cat-color); }
 
 .pop-animation { animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.25); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 
-/* 📻 エリア注目情報 (3D回転ティッカー) */
+/* 📻 エリア注目情報 */
 .area-info-ticker { position: absolute; bottom: calc(80px + env(safe-area-inset-bottom)); left: 0; right: 0; height: 56px; background: #FFFFFF; border-radius: 40px 40px 0 0 !important; box-shadow: 0 -4px 16px rgba(0,0,0,0.1) !important; border-top: none !important; display: flex; align-items: center; z-index: 10; padding-top: 8px; }
 .ticker-left { flex: 1; padding: 0 0 0 24px !important; height: 100%; perspective: 1000px; display: flex; align-items: center; cursor: pointer; overflow: hidden; }
 .ticker-right { border-left: none; margin: 8px 16px 8px 8px; padding: 0 16px !important; border-radius: 12px; background: #FFFFFF; box-shadow: 3px 3px 6px #E8EAED, -3px -3px 6px #FFFFFF; font-size: 0.85em; font-weight: bold; color: #5F6368; display: flex; align-items: center; height: 70%; flex-shrink: 0; transition: all 0.2s ease; cursor: pointer; }
@@ -83,7 +80,10 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100dvh; font-family: "G
 /* ボタン・フォームUI */
 .btn-main-blue { padding: 12px; background: #1A73E8; color: #FFF; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1em; display: flex; justify-content: center; align-items: center; }
 .btn-outline-blue { padding: 12px; background: transparent; color: #1A73E8; border: 1px solid #1A73E8; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
-.btn-text-gray { padding: 12px; background: transparent; color: #5F6368; border: none; font-weight: bold; cursor: pointer; }
+.btn-text-gray { padding: 12px; background: transparent; color: #5F6368; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; }
+
+/* 無効化ボタンの汎用スタイル */
+button:disabled { background: #E8EAED !important; color: #9AA0A6 !important; border-color: #DADCE0 !important; cursor: not-allowed !important; box-shadow: none !important; }
 
 textarea, input[type="text"] { width: 100%; padding: 12px; border: 1px solid #DADCE0; background: #F8F9FA; color: #202124; border-radius: 8px; font-size: 1em; font-family: inherit; resize: none; margin-bottom: 12px; }
 textarea:focus, input[type="text"]:focus { outline: none; border-color: #1A73E8; background: #FFFFFF; }
@@ -140,7 +140,7 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .btn-manage.nav { color: #1A73E8; border-color: #1A73E8; background: #E8F0FE; display: flex; align-items: center; gap: 4px; }
 .btn-manage.nav:active { background: #D2E3FC; }
 
-/* 🧭 コンパス（扇形ライト） */
+/* 🧭 コンパス */
 #geoBackBtn { position: relative; }
 .heading-cone { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center; transform: translateX(-50%) rotate(0deg); width: 120px; height: 120px; background: radial-gradient(circle at bottom, rgba(26,115,232,0.45) 0%, rgba(26,115,232,0) 70%); clip-path: polygon(50% 100%, 0 0, 100% 0); display: none; pointer-events: none; }
 .heading-cone.show { display: block; }
@@ -159,14 +159,12 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .wx-value, .tile-value { font-size: 18px; font-weight: bold; color: #202124; }
 .wx-unit, .tile-unit { font-size: 12px; color: #70757A; margin-left: 2px; }
 .wx-label { font-size: 13px; color: #202124; font-weight: 500; }
-
-/* 🌟 天気エリア選択用のターゲットマーク ＆ 決定ボタン */
 .weather-target-mark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 100; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
 .btn-weather-confirm { position: absolute; bottom: calc(155px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 100; padding: 14px 28px; background: #1A73E8; color: white; font-weight: bold; border: none; border-radius: 30px; box-shadow: 0 4px 12px rgba(26,115,232,0.4); cursor: pointer; font-size: 1.1em; display: flex; align-items: center; gap: 8px; }
 .btn-weather-confirm:active { background: #1557B0; transform: translateX(-50%) scale(0.95); }
 
-/* 🌟 Google風 Snackbar (白基調オシャレ版) */
-.material-toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #FFFFFF; color: #3C4043; padding: 14px 24px; border-radius: 24px; display: flex; align-items: center; gap: 12px; font-size: 0.95em; font-weight: bold; box-shadow: 0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08); z-index: 5000; opacity: 0; visibility: hidden; transition: opacity 0.5s ease; pointer-events: none; }
+/* 🌟 Google風 Snackbar */
+.material-toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #FFFFFF; color: #3C4043; padding: 14px 24px; border-radius: 24px; display: flex; align-items: center; gap: 12px; font-size: 0.95em; font-weight: bold; box-shadow: 0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08); z-index: 5000; opacity: 0; visibility: hidden; transition: opacity 0.5s ease; pointer-events: none; white-space: nowrap; }
 .material-toast.show { opacity: 1; visibility: visible; }
 .toast-icon { font-size: 1.4em; line-height: 1; }
 
@@ -184,7 +182,6 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .copyright-notice { margin-top: 40px; padding: 20px; text-align: center; font-size: 0.75em; color: #70757A; line-height: 1.6; }
 .copyright-notice a { color: #1A73E8; text-decoration: none; }
 
-/* サポート画面 (お知らせ・アコーディオン) */
 .announcement-box { background: #FFFFFF; border: 1px solid #DADCE0; border-radius: 12px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 .announcement-box ul { list-style: none; padding: 0; margin: 0; }
 .announcement-box li { font-size: 0.9em; margin-bottom: 12px; color: #3C4043; line-height: 1.5; border-bottom: 1px dashed #E8EAED; padding-bottom: 12px; }
@@ -200,84 +197,28 @@ input[type="text"]:disabled { background: #E8EAED; color: #80868B; border-color:
 .accordion-content { padding: 0 15px; background-color: #FAFAFA; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; font-size: 0.9em; color: #5F6368; line-height: 1.6; }
 .accordion-content p { margin: 15px 0; }
 
-/* モーダル */
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: rgba(0,0,0,0.5); z-index: 3000; backdrop-filter: blur(2px); }
 .profile-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 320px; background: #FFFFFF; border-radius: 16px; padding: 24px; z-index: 3001; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
 .close-modal-btn { position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 1.5em; color: #5F6368; cursor: pointer; }
 
+#memoActionPanel.peek-bottom { transform: translateY(calc(100% - 90px)) !important; overflow: hidden; }
 
-/* 🌟 建物指定時にパネルを一番下まで引っ込めるためのクラス */
-#memoActionPanel.peek-bottom {
-    transform: translateY(calc(100% - 90px)) !important;
-    overflow: hidden;
-}
-
-
-/* 🌟 周辺検索ボタン */
-.nearby-btn {
-    width: 100%;
-    padding: 10px;
-    background: #eefdf4;
-    color: #06C167;
-    border: 1px solid #06C167;
-    border-radius: 8px;
-    margin-bottom: 8px; /* 入力欄との隙間 */
-    font-weight: bold;
-    cursor: pointer;
-}
-
-/* 🌟 候補リスト画面（裏の地図が触れるように少し下げる） */
-#nearbyCandidateSheet {
-    height: 70vh; /* 画面の70%の高さ */
-    background: white;
-    border-radius: 20px 20px 0 0;
-    padding: 20px;
-    position: fixed;
-    bottom: -100%; /* 最初は隠す */
-    left: 0;
-    width: 100%;
-    transition: bottom 0.3s;
-    z-index: 2000; /* メモシートより上に被せる */
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-}
-
-#nearbyCandidateSheet.show { 
-    bottom: 0; 
-}
-
-/* 候補リストの中身 */
-.candidate-list {
-    max-height: calc(100% - 100px);
-    overflow-y: auto; /* スクロール可能に */
-}
-
-.candidate-item {
-    display: block;
-    width: 100%;
-    padding: 15px;
-    border-bottom: 1px solid #eee;
-    text-align: left;
-    background: none;
-    border: none;
-    font-size: 16px;
-}
-
+/* 🌟 周辺検索リスト */
+.nearby-btn { width: 100%; padding: 10px; background: #eefdf4; color: #06C167; border: 1px solid #06C167; border-radius: 8px; margin-bottom: 8px; font-weight: bold; cursor: pointer; }
+#nearbyCandidateSheet { height: 70vh; background: white; border-radius: 20px 20px 0 0; padding: 20px; position: fixed; bottom: -100%; left: 0; width: 100%; transition: bottom 0.3s; z-index: 2000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+#nearbyCandidateSheet.show { bottom: 0; }
+.candidate-list { height: calc(70vh - 140px); overflow-y: auto; overscroll-behavior: contain; padding-bottom: 30px; }
+.candidate-item { display: block; width: 100%; padding: 15px; border-bottom: 1px solid #eee; text-align: left; background: none; border: none; font-size: 16px; }
 .candidate-item:active { background: #f5f5f5; }
+.map-search-btn { font-weight: bold; color: #333; background: #f9f9f9; border-bottom: 2px solid #ddd; margin-bottom: 10px; }
 
-/* マップで探すボタンだけ色を変えて目立たせる */
-.map-search-btn {
-    font-weight: bold;
-    color: #333;
-    background: #f9f9f9;
-    border-bottom: 2px solid #ddd;
-    margin-bottom: 10px;
-}
+/* 🌟 待機計測カードのスタイル */
+.wait-timer-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(8px); padding: 12px 16px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.5); z-index: 20; cursor: pointer; transition: transform 0.2s; white-space: nowrap; align-items: center; width: max-content; }
+.wait-timer-card:active { transform: scale(0.95); }
+.wait-card-content { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 0.95em; color: #3C4043; }
+.wait-divider { color: #DADCE0; }
+.wait-store-name { color: #1A73E8; max-width: 140px; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: bottom; }
+.btn-stop-timer { background: #FCE8E6 !important; border: 2px solid #EA4335 !important; }
 
-
-/* 🌟 修正：候補リストの中身を確実にスクロールさせる */
-.candidate-list {
-    height: calc(70vh - 140px); /* 高さをバシッと固定して枠を作る */
-    overflow-y: auto; /* 枠からはみ出た分をスクロール可能にする */
-    overscroll-behavior: contain; /* リストをスクロールした時に裏の地図が誤爆して動くのを防ぐ（神機能） */
-    padding-bottom: 30px; /* 一番下までスクロールした時に少し余白を持たせる */
-}
+/* 🌟 分析履歴のリスト用スタイル */
+.store-history-btn:active { background: #F8F9FA; }

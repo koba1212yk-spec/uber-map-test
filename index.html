@@ -34,6 +34,18 @@
         <div id="searchSuggestions" class="search-suggestions"></div>
 
         <div id="mapControlsContainer" class="map-controls-container">
+            <div id="waitTimerCard" class="wait-timer-card" style="display: none; position: absolute; right: 60px; top: 0;">
+                <div class="wait-card-content">
+                    <span id="waitTimerText">⏱️ 00:00</span>
+                    <span class="wait-divider">|</span>
+                    <span id="waitStoreText" class="wait-store-name">📍 店舗を登録(タップ)</span>
+                </div>
+            </div>
+
+            <button id="btnStartWaitTimer" class="control-circle-btn" title="待機計測">
+                <span id="waitTimerBtnIcon" style="font-size: 1.2em;">⏱️</span>
+            </button>
+
             <button id="btnQuickMemo" class="control-circle-btn" title="現在地にメモ">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="#5F6368"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
             </button>
@@ -97,17 +109,11 @@
                 <label class="cat-chip"><input type="radio" name="memoCatInput" value="💡 その他"><span>💡 その他</span></label>
             </div>
 
-            <!-- 🌟 ここが修正された入力フォーム部分です 🌟 -->
             <div id="buildingInputSection" style="margin-top: 10px; padding: 12px; background: #F8F9FA; border-radius: 8px; border: 1px solid #E8EAED;">
-                
-                <!-- 🌟 新しい検索ボタンを追加！ -->
-                <button type="button" id="btnSearchNearby" class="nearby-btn" style="width: 100%; padding: 10px; background: #eefdf4; color: #06C167; border: 1px solid #06C167; border-radius: 8px; margin-bottom: 10px; font-weight: bold; cursor: pointer;">🔍 周辺の建物を自動検索</button>
-                
-                <!-- 既存の「地図をタップ」ボタンは候補リスト画面に移すため、ここでは非表示にして裏方として残します -->
+                <button type="button" id="btnSearchNearby" class="nearby-btn">🔍 周辺の建物を自動検索</button>
                 <button id="btnPickBuilding" class="btn-outline-blue" style="display: none; width: 100%; padding: 8px; font-size: 0.9em; margin-bottom: 12px; align-items: center; justify-content: center; gap: 6px;">
                     🎯 地図をタップして建物を指定
                 </button>
-
                 <input type="text" id="memoBuildingName" placeholder="建物名 (例: 豊洲レジデンス)" style="margin-bottom: 8px; background: #FFFFFF; font-size: 0.9em; padding: 10px;">
                 <input type="text" id="memoAddress" placeholder="住所 (例: 東京都江東区豊洲4丁目X-X)" style="margin-bottom: 0; font-size: 0.85em; background: #FFFFFF; color: #5F6368; padding: 10px;">
             </div>
@@ -160,7 +166,6 @@
             <div class="category-selector" id="filterCategoryContainer"></div>
         </div>
 
-        <!-- 既存の「メモを見る画面」 -->
         <div id="memoBottomSheet" class="bottom-sheet">
             <button id="btnCloseMemoSheet" class="btn-close-sheet">✕</button>
             <div class="drag-handle"></div>
@@ -203,16 +208,32 @@
             </div>
         </div>
 
-        <!-- 🌟 追加した「周辺の建物候補リスト画面」 🌟 -->
         <div id="nearbyCandidateSheet" class="bottom-sheet">
-            <div class="sheet-header">
-                <span>📍 周辺の建物候補</span>
-                <button id="btnCloseNearby" class="btn-close-sheet">✕</button>
+            <div class="sheet-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:bold; color:#202124;">📍 周辺の建物候補</span>
+                <button id="btnCloseNearby" class="btn-close-sheet" style="position:static;">✕</button>
             </div>
-            <div class="sheet-content">
+            <div class="sheet-content" style="margin-top: 10px;">
                 <button id="btnMapTapSearch" class="candidate-item map-search-btn">🗺️ マップをタップで探す</button>
-                <div id="nearbyList" class="candidate-list">
-                    <!-- ここに候補リストが生成されます -->
+                <div id="nearbyList" class="candidate-list"></div>
+            </div>
+        </div>
+
+        <div id="waitInputSheet" class="bottom-sheet">
+            <div class="drag-handle"></div>
+            <div class="sheet-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                <span style="font-weight:bold; font-size:1.1em; color:#202124;">⏱️ 待機情報の登録</span>
+                <button id="btnCloseWaitInput" class="btn-close-sheet" style="position:static;">✕</button>
+            </div>
+            <div class="sheet-content" style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="btnSearchWaitStore" class="nearby-btn" style="background: #E8F0FE; color: #1A73E8; border-color: #1A73E8;">🔍 周辺200mの店舗を検索</button>
+                <div id="waitStoreList" class="candidate-list" style="height: 250px; display: none; padding-bottom: 10px;"></div>
+                
+                <input type="text" id="waitManualStoreName" placeholder="店舗名を手入力 (リストにない場合)" style="margin-top: 5px; margin-bottom: 5px;">
+                
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button id="btnWaitComplete" class="btn-main-blue" style="flex:2; background:#06C167;">✅ 受け取り完了</button>
+                    <button id="btnWaitCancel" class="btn-text-gray" style="flex:1; border: 1px solid #EA4335; color: #EA4335;">❌ キャンセル</button>
                 </div>
             </div>
         </div>
@@ -231,21 +252,16 @@
         <h2 class="profile-page-title">お知らせ</h2>
         <div class="announcement-box">
             <ul>
-                <li><span class="badge new">NEW</span> <b>2026/07/06</b><br>建物の自動取得機能を実装しました！「🏢 建物・入口」タグの時に地図をタップするだけで、Googleの精度で住所と建物名が一瞬で入ります。</li>
-                <li><span class="badge new">NEW</span> <b>2026/07/06</b><br>マップの初期表示を斜めに変更しました。高い建物を見たい場合は、フィルター画面から「3D建物を表示」をONにしてください！</li>
+                <li><span class="badge new">NEW</span> <b>2026/07/14</b><br>待機計測機能に「スマート停止」と「分析ダッシュボード」を追加！電波が悪い場所でも計測スタート可能になりました。</li>
+                <li><span class="badge info">INFO</span> <b>2026/07/06</b><br>建物の自動取得機能を実装しました！</li>
             </ul>
         </div>
 
         <h2 class="profile-page-title" style="margin-top:25px;">使い方ガイド</h2>
         <div class="accordion-container">
-            <button class="accordion-header">❓ 現在地ボタンが「扇マーク」に変わったのは何？</button>
-            <div class="accordion-content"><p>現在地ボタンは「通常 ➔ 扇待機 ➔ 扇起動(ロック)」の3段階に進化しました。青い扇マークが出ている時は、スマホの向きに合わせて進行方向を照らします。ロック中は地図を動かしても扇が消えません！</p></div>
-            <button class="accordion-header">❓ ワンタップで今いる場所にメモを残すには？</button>
-            <div class="accordion-content"><p>画面右上の「鉛筆マーク」を押すと、一瞬で現在地にズームしてメモ作成画面が開きます！</p></div>
-            <button class="accordion-header">❓ 渋滞や雨雲を見るには？</button>
-            <div class="accordion-content"><p>漏斗（フィルター）マークを押し、雨雲レーダーのスイッチを入れると気象庁のリアルタイム雨雲が重なります。「渋滞を確認」を押すと、Google Mapsアプリが渋滞表示モードで自動起動します。</p></div>
+            <button class="accordion-header">❓ 待機時間の測り方と分析の見方は？</button>
+            <div class="accordion-content"><p>マップ右下の「⏱️」ボタンを押すとバックグラウンドでも狂わずに計測がスタートします。待っている間に画面に出たカードをタップし、店舗名を選択しておくことができます。料理を受け取ったら「完了」を押すだけ！分析はプロフィール画面から確認できます。</p></div>
         </div>
-
         <hr class="menu-divider" style="margin:25px 0;">
         <h2 class="profile-page-title">フィードバック (ご要望・不具合報告)</h2>
         <textarea id="opinionInput" placeholder="バグ報告や欲しい機能など..." class="feedback-textarea"></textarea>
@@ -264,8 +280,12 @@
                 <p><strong>⏰ 時間:</strong> <span id="readTime">未設定</span></p>
                 <div id="readTags" class="tags-container" style="margin-top: 10px;"></div>
             </div>
-            <button id="editProfileBtn" class="btn-outline-blue">プロフィールを編集</button>
+            
+            <button id="btnOpenWaitAnalysis" class="btn-main-blue" style="width: 100%; margin-top: 15px; background: #E8F0FE; color: #1A73E8; border: 1px solid #1A73E8;">📊 詳細な待機データ分析を見る</button>
+            
+            <button id="editProfileBtn" class="btn-outline-blue" style="margin-top: 20px;">プロフィールを編集</button>
         </div>
+        
         <div id="profileEditMode" style="display: none;">
             <div class="input-group">
                 <label>公開する名前</label>
@@ -283,6 +303,39 @@
             <p><strong>© 2026 DeliMap. All Rights Reserved.</strong></p>
             <p>当アプリのデザイン、レイアウト、および独自機能の無断転載・複製を固く禁じます。</p>
             <p class="attribution"><a href="https://www.maptiler.com/copyright/" target="_blank">© MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap contributors</a></p>
+        </div>
+        <div style="height: 100px;"></div>
+    </div>
+
+    <!-- 🌟 新設: 待機データ分析ダッシュボード画面 -->
+    <div id="waitAnalysisPage" class="page-section profile-page-container" style="display: none;">
+        <div style="display: flex; align-items: center; margin-bottom: 20px;">
+            <button id="btnBackFromAnalysis" style="background:none; border:none; font-size:1.5em; margin-right:10px; cursor:pointer; color:#1A73E8;">←</button>
+            <h2 class="profile-page-title" style="margin:0;">📊 待機データ分析</h2>
+        </div>
+        
+        <!-- サマリー画面 -->
+        <div id="analysisSummaryView">
+            <div class="profile-card" style="text-align: left; margin-bottom: 15px;">
+                <h3 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:10px; font-size:1.05em;">⚠️ ワースト店舗ランキング</h3>
+                <div id="waitRankingList">読み込み中...</div>
+            </div>
+            
+            <div class="profile-card" style="text-align: left;">
+                <h3 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:10px; font-size:1.05em;">🏢 店舗ごとの履歴</h3>
+                <div id="waitStoreGroupList">読み込み中...</div>
+            </div>
+        </div>
+
+        <!-- 店舗ごとの詳細履歴画面 -->
+        <div id="analysisDetailView" style="display: none;">
+            <div class="profile-card" style="text-align: left; padding: 0;">
+                <div style="display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee; background: #F8F9FA; border-radius: 12px 12px 0 0;">
+                    <button id="btnBackToAnalysisSummary" style="background:none; border:none; font-size:1.2em; margin-right:10px; cursor:pointer; color:#1A73E8;">← 戻る</button>
+                    <h3 id="detailStoreName" style="margin:0; font-size:1em; color:#202124;">店舗名</h3>
+                </div>
+                <div id="detailHistoryList" style="padding: 0 15px 15px 15px;"></div>
+            </div>
         </div>
         <div style="height: 100px;"></div>
     </div>
