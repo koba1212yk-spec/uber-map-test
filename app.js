@@ -100,7 +100,7 @@ if (!localName) { const seedId = Math.floor(1000 + Math.random() * 9000); localN
 myProfileName = localName;
 document.getElementById('readName').textContent = myProfileName; document.getElementById('profileName').value = myProfileName;
 
-signInAnonymously(auth).then((userCredential) => { currentUserId = userCredential.user.uid; loadProfile(); }).catch(e => console.error(e));
+signInAnonymously(auth).then((userCredential) => { currentUserId = userCredential.user.uid; loadProfile(); loadSalesData(); }).catch(e => console.error(e));
 
 document.querySelectorAll('input[name="memoCatInput"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
@@ -137,7 +137,6 @@ function startLocationTracking() {
                     document.getElementById('memoTextInput').placeholder = "タワマンの入り口は裏手です、等";
                 }
 
-                // 🌟 GPS未取得で待機計測スタートしていた場合、座標が取れた瞬間にセットしてボタンを青く光らせる
                 if (waitTimerInterval && !waitTargetCoords) {
                     waitTargetCoords = { lng: currentWatchCoords[0], lat: currentWatchCoords[1] };
                     document.getElementById('btnWaitComplete').disabled = false;
@@ -478,13 +477,33 @@ function handleMapInteraction(e) {
     const sheet = document.getElementById('memoBottomSheet'); if (sheet && sheet.classList.contains('show')) sheet.classList.add('peek'); 
     const panel = document.getElementById('memoActionPanel'); 
     if (panel && panel.classList.contains('show') && panel.style.transform === '') panel.classList.add('peek');
+    closeFabMenu(); // マップを触ったらFABメニューを閉じる
 }
 map.on('dragstart', handleMapInteraction); map.on('zoomstart', handleMapInteraction);
 
-const tabs = { 'tabMap': 'mapPage', 'tabSupport': 'supportPage', 'tabProfile': 'profilePage' };
+const tabs = { 'tabMap': 'mapPage', 'tabSales': 'salesPage', 'tabProfile': 'profilePage' };
 Object.keys(tabs).forEach(tabId => {
     const el = document.getElementById(tabId);
-    if(el) { el.addEventListener('click', () => { document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.page-section').forEach(p => p.style.display = 'none'); document.getElementById(tabs[tabId]).style.display = 'block'; if(tabId === 'tabMap') map.resize(); }); }
+    if(el) { 
+        el.addEventListener('click', () => { 
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active')); 
+            el.classList.add('active'); 
+            document.querySelectorAll('.page-section').forEach(p => p.style.display = 'none'); 
+            document.getElementById(tabs[tabId]).style.display = 'block'; 
+            
+            // 🌟 追加・修正：売上タブの時だけメインFABを表示する
+            const fabContainer = document.getElementById('mainFabContainer');
+            if(tabId === 'tabSales') {
+                fabContainer.style.display = 'flex';
+                generateCalendar(currentYear, currentMonth); 
+            } else {
+                fabContainer.style.display = 'none';
+                closeFabMenu(); // マップ等に戻った時は念のためメニューを閉じる
+            }
+
+            if(tabId === 'tabMap') map.resize(); 
+        }); 
+    }
 });
 
 setInterval(() => {
@@ -521,7 +540,7 @@ const filterCats = ['🏢 建物・入口', '🅿️ 駐輪スポット', '⚠�
 const filterContainer = document.getElementById('filterCategoryContainer');
 filterCats.forEach(cat => { filterContainer.innerHTML += `<label class="cat-chip"><input type="checkbox" value="${cat}" checked><span>${cat.substring(0, 2)} ${cat.substring(3)}</span></label>`; });
 
-document.getElementById('btnFilterMemo').addEventListener('click', () => { document.getElementById('memoBottomSheet').classList.remove('show'); document.getElementById('memoActionPanel').classList.remove('show'); document.getElementById('filterBottomSheet').classList.add('show'); });
+document.getElementById('btnFilterMemo').addEventListener('click', () => { document.getElementById('memoBottomSheet').classList.remove('show'); document.getElementById('memoActionPanel').classList.remove('show'); document.getElementById('filterBottomSheet').classList.add('show'); closeFabMenu(); });
 document.getElementById('btnCloseFilter').addEventListener('click', () => { document.getElementById('filterBottomSheet').classList.remove('show'); });
 document.getElementById('chkShowMineOnly').addEventListener('change', () => { filterState.showMineOnly = document.getElementById('chkShowMineOnly').checked; applyFilters(); });
 filterContainer.addEventListener('change', () => { filterState.categories = Array.from(filterContainer.querySelectorAll('input:checked')).map(cb => cb.value); applyFilters(); });
@@ -534,6 +553,7 @@ function openMemoAddSheet(lngLat, zoomIn = false) {
     document.getElementById('filterBottomSheet').classList.remove('show'); 
     const panel = document.getElementById('memoActionPanel'); 
     panel.classList.remove('peek'); panel.style.transform = ''; panel.classList.add('show');
+    closeFabMenu();
     
     document.getElementById('memoBuildingName').value = ""; document.getElementById('memoAddress').value = "";
     const catInput = document.querySelector('input[name="memoCatInput"]:checked'); document.getElementById('buildingInputSection').style.display = (catInput && catInput.value === '🏢 建物・入口') ? 'block' : 'none';
@@ -599,7 +619,7 @@ document.getElementById('btnSaveMemo').addEventListener('click', async () => {
         else { memoData.likesCount = 0; memoData.reportCount = 0; memoData.createdAt = Date.now(); await addDoc(collection(db, "memos"), memoData); }
         
         closeMemoForm(); await loadMemosToMap();
-        const toast = document.getElementById('materialToast'); if (toast) { toast.classList.add('show'); setTimeout(() => { toast.classList.remove('show'); }, 3500); }
+        const toast = document.getElementById('materialToast'); if (toast) { toast.querySelector('.toast-text').innerHTML = `メモありがとう！<br><span style="font-size: 0.85em; font-weight: normal; opacity: 0.9; color: #5F6368;">マップに登録されました</span>`; toast.classList.add('show'); setTimeout(() => { toast.classList.remove('show'); }, 3500); }
     } catch (e) { alert("エラーが発生しました"); } finally { saveBtn.disabled = false; saveBtn.textContent = "投稿する"; }
 });
 
@@ -756,7 +776,7 @@ document.getElementById('btnMapTapSearch').addEventListener('click', () => { doc
 
 
 // =========================================================
-// 🌟 待機時間計測（スマート停止・フライング計測・階層分析）
+// 🌟 待機時間計測（スマート停止）
 // =========================================================
 function formatWaitTime(seconds) {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -764,238 +784,541 @@ function formatWaitTime(seconds) {
     return `${m}:${s}`;
 }
 
-// 1. 待機計測スタート ＆ スマート停止ボタン
 document.getElementById('btnStartWaitTimer').addEventListener('click', () => {
-    // 既に動いている場合（🟥ボタンとして機能）
     if (waitTimerInterval) {
-        // 店舗が入力済みかチェック
         const storeName = document.getElementById('waitManualStoreName').value.trim();
-        
-        if (storeName && waitTargetCoords) {
-            // 店舗も座標もあるなら、パネルを出さずに即座に「完了」して保存（スマート停止）
-            finishWaitTimer('completed');
-        } else if (!waitTargetCoords) {
-            // 座標がまだ取れていない場合
-            alert("📍 現在地を取得中です。少し移動するか、電波の良い場所でお待ちください。");
-        } else {
-            // 店舗が未指定ならパネルを開く
-            document.getElementById('waitInputSheet').classList.add('show');
-        }
+        if (storeName && waitTargetCoords) { finishWaitTimer('completed'); } 
+        else if (!waitTargetCoords) { alert("📍 現在地を取得中です。少し移動するか、電波の良い場所でお待ちください。"); } 
+        else { document.getElementById('waitInputSheet').classList.add('show'); }
         return;
     }
     
-    // まだ動いていない場合（スタート）
     const coords = currentWatchCoords || (currentLocationMarker ? [currentLocationMarker.getLngLat().lng, currentLocationMarker.getLngLat().lat] : null);
-    
-    // GPSが取れていれば座標セット。なければnullでフライングスタート（完了ボタンは無効化）
-    if (coords) {
-        waitTargetCoords = { lng: coords[0], lat: coords[1] };
-        document.getElementById('btnWaitComplete').disabled = false;
-    } else {
-        waitTargetCoords = null;
-        document.getElementById('btnWaitComplete').disabled = true; // 座標が取れるまでロック
-    }
+    if (coords) { waitTargetCoords = { lng: coords[0], lat: coords[1] }; document.getElementById('btnWaitComplete').disabled = false; } 
+    else { waitTargetCoords = null; document.getElementById('btnWaitComplete').disabled = true; }
     
     waitStartTime = Date.now();
     
-    const btnIcon = document.getElementById('waitTimerBtnIcon');
-    const btn = document.getElementById('btnStartWaitTimer');
-    btnIcon.textContent = '🟥';
-    btn.classList.add('btn-stop-timer');
+    const btnIcon = document.getElementById('waitTimerBtnIcon'); const btn = document.getElementById('btnStartWaitTimer');
+    btnIcon.textContent = '🟥'; btn.classList.add('btn-stop-timer');
     
     document.getElementById('waitTimerCard').style.display = 'flex';
-    document.getElementById('waitStoreText').textContent = '📍 店舗を登録(タップ)';
-    document.getElementById('waitManualStoreName').value = '';
+    document.getElementById('waitStoreText').textContent = '📍 店舗を登録(タップ)'; document.getElementById('waitManualStoreName').value = '';
     
     waitTimerInterval = setInterval(() => {
         const elapsedSec = Math.floor((Date.now() - waitStartTime) / 1000);
         document.getElementById('waitTimerText').textContent = `⏱️ ${formatWaitTime(elapsedSec)}`;
-        if (elapsedSec > 1800) {
-            resetWaitTimer();
-            alert("30分を超過したため、止め忘れと判定しデータをリセットしました。");
-        }
+        if (elapsedSec > 1800) { resetWaitTimer(); alert("30分を超過したため、止め忘れと判定しデータをリセットしました。"); }
     }, 1000);
 });
 
-// 2. 待機カードを押してパネル（下からスッ）を開閉
-document.getElementById('waitTimerCard').addEventListener('click', () => {
-    document.getElementById('waitInputSheet').classList.add('show');
-});
-document.getElementById('btnCloseWaitInput').addEventListener('click', () => {
-    document.getElementById('waitInputSheet').classList.remove('show');
-});
+document.getElementById('waitTimerCard').addEventListener('click', () => { document.getElementById('waitInputSheet').classList.add('show'); });
+document.getElementById('btnCloseWaitInput').addEventListener('click', () => { document.getElementById('waitInputSheet').classList.remove('show'); });
 
-// 3. 待機中のヒマつぶし「店舗検索」
 document.getElementById('btnSearchWaitStore').addEventListener('click', async () => {
-    if (!waitTargetCoords) {
-        alert("📍 現在地を取得中です。もう少しお待ちください。");
-        return;
-    }
-
-    const btn = document.getElementById('btnSearchWaitStore');
-    const origText = btn.innerHTML;
-    btn.innerHTML = '🔄 検索中...';
-    btn.disabled = true;
-
+    if (!waitTargetCoords) { alert("📍 現在地を取得中です。もう少しお待ちください。"); return; }
+    const btn = document.getElementById('btnSearchWaitStore'); const origText = btn.innerHTML; btn.innerHTML = '🔄 検索中...'; btn.disabled = true;
     try {
         await loadGoogleMapsScript();
         const center = new google.maps.LatLng(waitTargetCoords.lat, waitTargetCoords.lng);
-        const dummyDiv = document.createElement('div');
-        const service = new google.maps.places.PlacesService(dummyDiv);
+        const dummyDiv = document.createElement('div'); const service = new google.maps.places.PlacesService(dummyDiv);
         
         service.nearbySearch({ location: center, radius: 200 }, (results, status) => {
-            btn.innerHTML = origText;
-            btn.disabled = false;
-            const listContainer = document.getElementById('waitStoreList');
-            listContainer.innerHTML = '';
-            listContainer.style.display = 'block';
-
+            btn.innerHTML = origText; btn.disabled = false;
+            const listContainer = document.getElementById('waitStoreList'); listContainer.innerHTML = ''; listContainer.style.display = 'block';
             let finalCandidates = [];
-            
             const myStores = JSON.parse(localStorage.getItem('deliMapMyStores') || '[]');
-            myStores.forEach(s => {
-                const d = calcDistance(waitTargetCoords.lat, waitTargetCoords.lng, s.lat, s.lng);
-                if (d <= 100) {
-                    finalCandidates.push({ name: `⭐ ${s.name}`, vicinity: 'マイ店舗 (登録済み)', dist: d, isLocal: true, originalName: s.name });
-                }
-            });
+            myStores.forEach(s => { const d = calcDistance(waitTargetCoords.lat, waitTargetCoords.lng, s.lat, s.lng); if (d <= 100) { finalCandidates.push({ name: `⭐ ${s.name}`, vicinity: 'マイ店舗 (登録済み)', dist: d, isLocal: true, originalName: s.name }); } });
 
             if (status === google.maps.places.PlacesServiceStatus.OK && results.length > 0) {
                 let filtered = results.filter(p => !p.types || !p.types.some(t => ['political', 'locality', 'administrative_area_level_1', 'administrative_area_level_2', 'sublocality'].includes(t)));
-                filtered.forEach(p => {
-                    const d = calcDistance(waitTargetCoords.lat, waitTargetCoords.lng, p.geometry.location.lat(), p.geometry.location.lng());
-                    finalCandidates.push({ name: p.name, vicinity: p.vicinity, dist: d, isLocal: false });
-                });
+                filtered.forEach(p => { const d = calcDistance(waitTargetCoords.lat, waitTargetCoords.lng, p.geometry.location.lat(), p.geometry.location.lng()); finalCandidates.push({ name: p.name, vicinity: p.vicinity, dist: d, isLocal: false }); });
             }
 
             finalCandidates.sort((a, b) => a.dist - b.dist);
-
             const maxCount = Math.min(finalCandidates.length, 20);
             if (maxCount > 0) {
                 for (let i = 0; i < maxCount; i++) {
-                    const place = finalCandidates[i];
-                    const button = document.createElement('button');
-                    button.className = 'candidate-item';
-                    
-                    let bName = place.name || "";
-                    let address = place.vicinity || "";
+                    const place = finalCandidates[i]; const button = document.createElement('button'); button.className = 'candidate-item';
+                    let bName = place.name || ""; let address = place.vicinity || "";
                     button.innerHTML = `<strong>🏢 ${bName}</strong><br><span style="font-size: 13px; color: #888;">${address}</span>`;
-                    
-                    button.addEventListener('click', () => {
-                        document.getElementById('waitManualStoreName').value = place.isLocal ? place.originalName : bName;
-                        document.getElementById('waitStoreText').textContent = `🏢 ${place.isLocal ? place.originalName : bName}`;
-                        listContainer.style.display = 'none';
-                    });
+                    button.addEventListener('click', () => { document.getElementById('waitManualStoreName').value = place.isLocal ? place.originalName : bName; document.getElementById('waitStoreText').textContent = `🏢 ${place.isLocal ? place.originalName : bName}`; listContainer.style.display = 'none'; });
                     listContainer.appendChild(button);
                 }
-            } else {
-                listContainer.innerHTML = '<div style="padding: 10px; text-align: center; color: #888;">周辺に候補がありませんでした</div>';
-            }
+            } else { listContainer.innerHTML = '<div style="padding: 10px; text-align: center; color: #888;">周辺に候補がありませんでした</div>'; }
         });
-    } catch (e) {
-        btn.innerHTML = origText; btn.disabled = false;
-    }
+    } catch (e) { btn.innerHTML = origText; btn.disabled = false; }
 });
 
 function resetWaitTimer() {
-    clearInterval(waitTimerInterval);
-    waitTimerInterval = null;
-    document.getElementById('waitTimerCard').style.display = 'none';
-    const btn = document.getElementById('btnStartWaitTimer');
-    btn.classList.remove('btn-stop-timer');
-    document.getElementById('waitTimerBtnIcon').textContent = '⏱️';
+    clearInterval(waitTimerInterval); waitTimerInterval = null; document.getElementById('waitTimerCard').style.display = 'none';
+    const btn = document.getElementById('btnStartWaitTimer'); btn.classList.remove('btn-stop-timer'); document.getElementById('waitTimerBtnIcon').textContent = '⏱️';
     document.getElementById('waitInputSheet').classList.remove('show');
 }
 
-// 4. 計測終了＆Firebaseへ保存
 async function finishWaitTimer(statusStr) {
-    if (!waitTargetCoords) {
-        alert("📍 現在地を取得中です。GPSの取得が完了するまで保存できません。");
-        return;
-    }
-
+    if (!waitTargetCoords) { alert("📍 現在地を取得中です。GPSの取得が完了するまで保存できません。"); return; }
     const elapsedSec = Math.floor((Date.now() - waitStartTime) / 1000);
     let storeName = document.getElementById('waitManualStoreName').value.trim();
-    
-    if (!storeName) {
-        alert("店舗名を指定（または手入力）してください！");
-        return;
-    }
+    if (!storeName) { alert("店舗名を指定（または手入力）してください！"); return; }
 
     const myStores = JSON.parse(localStorage.getItem('deliMapMyStores') || '[]');
-    if (!myStores.some(s => s.name === storeName)) {
-        myStores.push({ name: storeName, lat: waitTargetCoords.lat, lng: waitTargetCoords.lng });
-        localStorage.setItem('deliMapMyStores', JSON.stringify(myStores));
-    }
+    if (!myStores.some(s => s.name === storeName)) { myStores.push({ name: storeName, lat: waitTargetCoords.lat, lng: waitTargetCoords.lng }); localStorage.setItem('deliMapMyStores', JSON.stringify(myStores)); }
 
     const btnId = statusStr === 'completed' ? 'btnWaitComplete' : 'btnWaitCancel';
-    const btn = document.getElementById(btnId);
-    const origTxt = btn.textContent;
-    btn.textContent = "⏳ 保存中...";
-    btn.disabled = true;
+    const btn = document.getElementById(btnId); const origTxt = btn.textContent; btn.textContent = "⏳ 保存中..."; btn.disabled = true;
 
     try {
-        await addDoc(collection(db, "wait_time_logs"), {
-            senderId: currentUserId,
-            storeName: storeName,
-            waitSeconds: elapsedSec,
-            status: statusStr,
-            lat: waitTargetCoords.lat,
-            lng: waitTargetCoords.lng,
-            createdAt: Date.now()
-        });
-        
+        await addDoc(collection(db, "wait_time_logs"), { senderId: currentUserId, storeName: storeName, waitSeconds: elapsedSec, status: statusStr, lat: waitTargetCoords.lat, lng: waitTargetCoords.lng, createdAt: Date.now() });
         resetWaitTimer();
-        
         const toast = document.getElementById('materialToast'); 
-        if (toast) { 
-            toast.querySelector('.toast-text').innerHTML = `待機時間を記録しました<br><span style="font-size: 0.85em; font-weight: normal; opacity: 0.9; color: #5F6368;">${storeName} / ${formatWaitTime(elapsedSec)}</span>`;
-            toast.classList.add('show'); 
-            setTimeout(() => { 
-                toast.classList.remove('show');
-                setTimeout(() => { toast.querySelector('.toast-text').innerHTML = `メモありがとう！<br><span style="font-size: 0.85em; font-weight: normal; opacity: 0.9; color: #5F6368;">マップに登録されました</span>`; }, 500);
-            }, 3500); 
-        }
-    } catch (e) {
-        alert("保存に失敗しました。電波を確認してください。");
-    } finally {
-        btn.textContent = origTxt;
-        btn.disabled = false;
-    }
+        if (toast) { toast.querySelector('.toast-text').innerHTML = `待機時間を記録しました<br><span style="font-size: 0.85em; font-weight: normal; opacity: 0.9; color: #5F6368;">${storeName} / ${formatWaitTime(elapsedSec)}</span>`; toast.classList.add('show'); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => { toast.querySelector('.toast-text').innerHTML = `完了しました<br><span style="font-size: 0.85em; font-weight: normal; opacity: 0.9; color: #5F6368;">マップに登録されました</span>`; }, 500); }, 3500); }
+    } catch (e) { alert("保存に失敗しました。電波を確認してください。"); } finally { btn.textContent = origTxt; btn.disabled = false; }
 }
-
 document.getElementById('btnWaitComplete').addEventListener('click', () => finishWaitTimer('completed'));
 document.getElementById('btnWaitCancel').addEventListener('click', () => finishWaitTimer('cancelled'));
 
 // =========================================================
-// 📊 待機データ分析ダッシュボード（階層型・詳細履歴対応）
+// 🌟 稼働タイマー (一時停止機能付き) & メインFAB
 // =========================================================
-let allMyWaitLogs = [];
+let workStartTime = null;
+let workTotalSeconds = 0; // 稼働した秒数の累積
+let workTimerRunning = false;
+let workIntervalId = null;
 
-document.getElementById('btnOpenWaitAnalysis').addEventListener('click', async () => {
-    // 画面遷移
+function pad(num) { return num.toString().padStart(2, '0'); }
+
+function updateWorkTimerDisplay() {
+    if (!workTimerRunning) return;
+    const now = Date.now();
+    const currentSessionSec = Math.floor((now - workStartTime) / 1000);
+    const total = workTotalSeconds + currentSessionSec;
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    document.getElementById('workTimerDisplay').textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
+document.getElementById('fabTimerBtn').addEventListener('click', () => {
+    closeFabMenu();
+    const bar = document.getElementById('workTimerBar');
+    const dot = bar.querySelector('.pulse-dot');
+    const statusTxt = document.getElementById('workTimerStatus');
+    
+    if (!workTimerRunning && workTotalSeconds === 0) {
+        // 新規スタート
+        workStartTime = Date.now();
+        workTimerRunning = true;
+        bar.classList.add('show');
+        dot.classList.remove('paused');
+        statusTxt.textContent = "稼働中... (タップで休憩)";
+        workIntervalId = setInterval(updateWorkTimerDisplay, 1000);
+    } else {
+        // 表示だけする (操作はバー自体をタップして行う)
+        bar.classList.add('show');
+    }
+});
+
+// タイマーバーをタップして「一時停止(休憩) / 再開 / 終了」を切り替え
+document.getElementById('workTimerBar').addEventListener('click', () => {
+    const dot = document.querySelector('.pulse-dot');
+    const statusTxt = document.getElementById('workTimerStatus');
+    
+    if (workTimerRunning) {
+        // 一時停止 (休憩)
+        if(confirm("休憩に入りますか？(タイマーを一時停止)")) {
+            clearInterval(workIntervalId);
+            workTotalSeconds += Math.floor((Date.now() - workStartTime) / 1000);
+            workTimerRunning = false;
+            dot.classList.add('paused');
+            statusTxt.textContent = "☕ 休憩中... (タップで再開)";
+        }
+    } else {
+        // 再開するか終了するか
+        if(confirm("稼働を再開しますか？\n(※キャンセルを押すとリセットして終了します)")) {
+            // 再開
+            workStartTime = Date.now();
+            workTimerRunning = true;
+            dot.classList.remove('paused');
+            statusTxt.textContent = "稼働中... (タップで休憩)";
+            workIntervalId = setInterval(updateWorkTimerDisplay, 1000);
+        } else {
+            // 終了リセット
+            if(confirm("タイマーをリセットして終了しますか？\n(売上記録に時間は反映されなくなります)")) {
+                workTotalSeconds = 0;
+                workTimerRunning = false;
+                document.getElementById('workTimerDisplay').textContent = "00:00:00";
+                document.getElementById('workTimerBar').classList.remove('show');
+            }
+        }
+    }
+});
+
+// 売上入力フォームで「タイマーを反映」ボタンを押した時
+document.getElementById('btnApplyTimerTime').addEventListener('click', () => {
+    let total = workTotalSeconds;
+    if (workTimerRunning) {
+        total += Math.floor((Date.now() - workStartTime) / 1000);
+    }
+    const hours = (total / 3600).toFixed(1);
+    document.getElementById('inputWorkTime').value = hours > 0 ? hours : "";
+});
+
+// =========================================================
+// 🌟 飛び出すメインFABの動き
+// =========================================================
+const fabContainer = document.getElementById('mainFabContainer');
+const fabMain = document.getElementById('fabMainBtn');
+
+function toggleFabMenu() {
+    fabContainer.classList.toggle('open');
+    fabMain.classList.toggle('open');
+}
+function closeFabMenu() {
+    fabContainer.classList.remove('open');
+    fabMain.classList.remove('open');
+}
+
+fabMain.addEventListener('click', toggleFabMenu);
+
+// 売上記録ボタン
+document.getElementById('fabRecordBtn').addEventListener('click', () => {
+    closeFabMenu();
+    document.getElementById('salesInputSheet').classList.add('show');
+    // 今日の日付をセット（例: 2026-07-16）[cite: 4]
+    const d = new Date();
+    selectedSalesDate = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    document.getElementById('salesInputDateLabel').textContent = `${d.getMonth()+1}/${d.getDate()}`;
+    
+    // 入力欄をクリア
+    document.getElementById('inputWorkTime').value = ''; document.getElementById('inputDistance').value = '';
+    document.getElementById('inputUberSales').value = ''; document.getElementById('inputUberCount').value = '';
+    document.getElementById('inputDemaeSales').value = ''; document.getElementById('inputDemaeCount').value = '';
+    document.getElementById('inputWoltSales').value = ''; document.getElementById('inputWoltCount').value = '';
+    document.getElementById('inputExpense').value = '';
+    updateTotalPreview();
+});
+
+document.getElementById('btnCloseSalesInput').addEventListener('click', () => {
+    document.getElementById('salesInputSheet').classList.remove('show');
+});
+
+
+// =========================================================
+// 📅 売上カレンダー ＆ 記録
+// =========================================================
+let currentYear = 2026;
+let currentMonth = 7; // 1〜12[cite: 4]
+let allSalesData = {}; // key: "YYYY-MM-DD", value: object
+let selectedSalesDate = null; // 入力用のターゲット日付
+
+// 入力フォームの合計プレビューをリアルタイム計算
+const inputsForTotal = ['inputUberSales', 'inputDemaeSales', 'inputWoltSales'];
+inputsForTotal.forEach(id => {
+    document.getElementById(id).addEventListener('input', updateTotalPreview);
+});
+
+function updateTotalPreview() {
+    const u = parseInt(document.getElementById('inputUberSales').value) || 0;
+    const d = parseInt(document.getElementById('inputDemaeSales').value) || 0;
+    const w = parseInt(document.getElementById('inputWoltSales').value) || 0;
+    document.getElementById('inputTotalPreview').textContent = `¥${(u + d + w).toLocaleString()}`;
+}
+
+// 売上データの読み込み
+async function loadSalesData() {
+    try {
+        const qSales = query(collection(db, "sales_logs"), where("userId", "==", currentUserId));
+        const snap = await getDocs(qSales);
+        allSalesData = {};
+        snap.forEach(doc => {
+            allSalesData[doc.data().dateKey] = doc.data();
+        });
+        if(document.getElementById('salesPage').style.display === 'block') {
+            generateCalendar(currentYear, currentMonth);
+        }
+    } catch(e) { console.error("Sales load err", e); }
+}
+
+// Firebaseへ売上を保存
+document.getElementById('btnSaveSales').addEventListener('click', async () => {
+    const uSales = parseInt(document.getElementById('inputUberSales').value) || 0;
+    const uCount = parseInt(document.getElementById('inputUberCount').value) || 0;
+    const dSales = parseInt(document.getElementById('inputDemaeSales').value) || 0;
+    const dCount = parseInt(document.getElementById('inputDemaeCount').value) || 0;
+    const wSales = parseInt(document.getElementById('inputWoltSales').value) || 0;
+    const wCount = parseInt(document.getElementById('inputWoltCount').value) || 0;
+    
+    const totalSales = uSales + dSales + wSales;
+    const totalCount = uCount + dCount + wCount;
+    
+    if (totalSales === 0 && totalCount === 0) {
+        alert("売上か件数を入力してください。"); return;
+    }
+
+    const wTime = parseFloat(document.getElementById('inputWorkTime').value) || 0;
+    const dist = parseInt(document.getElementById('inputDistance').value) || 0;
+    const exp = parseInt(document.getElementById('inputExpense').value) || 0;
+
+    const saveData = {
+        userId: currentUserId,
+        dateKey: selectedSalesDate,
+        totalSales, totalCount,
+        workTime: wTime, distance: dist, expense: exp,
+        uber: { sales: uSales, count: uCount },
+        demae: { sales: dSales, count: dCount },
+        wolt: { sales: wSales, count: wCount },
+        updatedAt: Date.now()
+    };
+
+    const btn = document.getElementById('btnSaveSales');
+    btn.disabled = true; btn.textContent = "⏳ 保存中...";
+    try {
+        // 日付キーでドキュメントIDを固定して上書き保存
+        await setDoc(doc(db, "sales_logs", `${currentUserId}_${selectedSalesDate}`), saveData);
+        allSalesData[selectedSalesDate] = saveData; // ローカルも更新
+        document.getElementById('salesInputSheet').classList.remove('show');
+        
+        // もしタイマーが動いていて今日の記録ならリセットを聞く
+        const todayStr = `${new Date().getFullYear()}-${pad(new Date().getMonth()+1)}-${pad(new Date().getDate())}`;
+        if(selectedSalesDate === todayStr && (workTimerRunning || workTotalSeconds > 0)) {
+            if(confirm("記録が完了しました。\n稼働タイマーをリセットして終了しますか？")) {
+                workTotalSeconds = 0; workTimerRunning = false; clearInterval(workIntervalId);
+                document.getElementById('workTimerDisplay').textContent = "00:00:00";
+                document.getElementById('workTimerBar').classList.remove('show');
+            }
+        }
+        
+        // カレンダーとグラフを再描画
+        if(document.getElementById('salesPage').style.display === 'block') generateCalendar(currentYear, currentMonth);
+        if(document.getElementById('analysisPage').style.display === 'block') drawAnalysisChart();
+        
+        const toast = document.getElementById('materialToast'); 
+        if (toast) { toast.querySelector('.toast-text').innerHTML = `売上を記録しました！<br><span style="font-size: 0.85em; font-weight: normal; opacity: 0.9; color: #5F6368;">¥${totalSales.toLocaleString()}</span>`; toast.classList.add('show'); setTimeout(() => { toast.classList.remove('show'); }, 3000); }
+    } catch(e) { alert("保存に失敗しました。"); }
+    btn.disabled = false; btn.textContent = "💾 保存する";
+});
+
+// カレンダー描画処理
+document.getElementById('btnPrevMonth').addEventListener('click', () => { currentMonth--; if(currentMonth < 1) { currentMonth = 12; currentYear--; } generateCalendar(currentYear, currentMonth); });
+document.getElementById('btnNextMonth').addEventListener('click', () => { currentMonth++; if(currentMonth > 12) { currentMonth = 1; currentYear++; } generateCalendar(currentYear, currentMonth); });
+
+function generateCalendar(y, m) {
+    document.getElementById('calendarMonthLabel').textContent = `${y}年${m}月`;
+    const firstDay = new Date(y, m - 1, 1).getDay();
+    const lastDate = new Date(y, m, 0).getDate();
+    
+    // 月曜始まりの補正
+    const offset = firstDay === 0 ? 6 : firstDay - 1;
+    
+    const calContainer = document.getElementById('calendarDays');
+    calContainer.innerHTML = '';
+    
+    let mTotalSales = 0; let mTotalCount = 0; let mTotalTime = 0;
+
+    // 空白セル
+    for (let i = 0; i < offset; i++) {
+        const div = document.createElement('div'); div.className = 'cal-day empty'; calContainer.appendChild(div);
+    }
+    
+    const today = new Date();
+    
+    for (let d = 1; d <= lastDate; d++) {
+        const dateKey = `${y}-${pad(m)}-${pad(d)}`;
+        const cell = document.createElement('div');
+        cell.className = 'cal-day';
+        if (y === today.getFullYear() && m === today.getMonth()+1 && d === today.getDate()) {
+            cell.classList.add('today');
+        }
+
+        const dateDiv = document.createElement('div'); dateDiv.className = 'cal-date';
+        dateDiv.textContent = d; cell.appendChild(dateDiv);
+        
+        // 天気アイコン（簡易ダミー。過去のAPIを保存しておけばここに出せる）
+        const wxDiv = document.createElement('div'); wxDiv.className = 'cal-wx';
+        // 🌟 疑似的にランダムな天気を表示（本番では天気保存データを使用）
+        const wxIcons = ["☀️", "☁️", "☔"];
+        // if(d%3===0) wxDiv.textContent = wxIcons[d%3]; cell.appendChild(wxDiv);
+
+        if (allSalesData[dateKey]) {
+            const data = allSalesData[dateKey];
+            mTotalSales += data.totalSales; mTotalCount += data.totalCount; mTotalTime += data.workTime;
+            
+            const amtDiv = document.createElement('div'); amtDiv.className = 'cal-amount';
+            amtDiv.textContent = `¥${data.totalSales.toLocaleString()}`;
+            const cntDiv = document.createElement('div'); cntDiv.className = 'cal-count';
+            cntDiv.textContent = `${data.totalCount}件`;
+            
+            cell.appendChild(amtDiv); cell.appendChild(cntDiv);
+        }
+
+        // セルタップで詳細表示（シンプルサマリー）
+        cell.addEventListener('click', () => {
+            document.querySelectorAll('.cal-day').forEach(c => c.classList.remove('selected'));
+            cell.classList.add('selected');
+            showDaySummary(dateKey);
+        });
+
+        calContainer.appendChild(cell);
+    }
+
+    // 月間サマリー更新
+    document.getElementById('calTotalAmount').textContent = mTotalSales.toLocaleString();
+    document.getElementById('calTotalCount').textContent = mTotalCount;
+    document.getElementById('calTotalTime').textContent = mTotalTime.toFixed(1);
+    
+    // デフォルトで今日を選択状態にする
+    const tKey = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+    showDaySummary(tKey);
+}
+
+function showDaySummary(dateKey) {
+    const summaryBox = document.getElementById('calDaySummary');
+    const parts = dateKey.split('-');
+    const dObj = new Date(parts[0], parts[1]-1, parts[2]);
+    const days = ['日','月','火','水','木','金','土'];
+    document.getElementById('calSummaryDate').textContent = `${parseInt(parts[1])}/${parseInt(parts[2])}(${days[dObj.getDay()]})`;
+
+    if (allSalesData[dateKey]) {
+        const data = allSalesData[dateKey];
+        document.getElementById('calSummaryAmount').textContent = `¥${data.totalSales.toLocaleString()}`;
+        document.getElementById('calSummaryCount').textContent = `${data.totalCount}件`;
+        document.getElementById('calSummaryTime').textContent = data.workTime.toFixed(1);
+        const hourly = data.workTime > 0 ? Math.floor(data.totalSales / data.workTime) : 0;
+        document.getElementById('calSummaryHourly').textContent = `¥${hourly.toLocaleString()}`;
+        
+        // 🌟 追加: サマリーをタップすると、その日の売上入力フォームを開いて編集できるようにする
+        summaryBox.onclick = () => {
+            selectedSalesDate = dateKey;
+            document.getElementById('salesInputDateLabel').textContent = `${parseInt(parts[1])}/${parseInt(parts[2])}`;
+            document.getElementById('inputWorkTime').value = data.workTime || '';
+            document.getElementById('inputDistance').value = data.distance || '';
+            document.getElementById('inputUberSales').value = data.uber?.sales || ''; document.getElementById('inputUberCount').value = data.uber?.count || '';
+            document.getElementById('inputDemaeSales').value = data.demae?.sales || ''; document.getElementById('inputDemaeCount').value = data.demae?.count || '';
+            document.getElementById('inputWoltSales').value = data.wolt?.sales || ''; document.getElementById('inputWoltCount').value = data.wolt?.count || '';
+            document.getElementById('inputExpense').value = data.expense || '';
+            updateTotalPreview();
+            document.getElementById('salesInputSheet').classList.add('show');
+        };
+    } else {
+        document.getElementById('calSummaryAmount').textContent = `¥0`;
+        document.getElementById('calSummaryCount').textContent = `0件`;
+        document.getElementById('calSummaryTime').textContent = `0.0`;
+        document.getElementById('calSummaryHourly').textContent = `¥0`;
+        summaryBox.onclick = null;
+    }
+    summaryBox.style.display = 'block';
+}
+
+
+// =========================================================
+// 📊 分析画面 (Chart.js 連携・戦略会議)
+// =========================================================
+let salesChartInstance = null;
+
+document.getElementById('fabAnalysisBtn').addEventListener('click', () => {
+    closeFabMenu();
     document.querySelectorAll('.page-section').forEach(p => p.style.display = 'none');
-    document.getElementById('waitAnalysisPage').style.display = 'block';
-    document.getElementById('analysisSummaryView').style.display = 'block';
-    document.getElementById('analysisDetailView').style.display = 'none';
+    document.getElementById('analysisPage').style.display = 'block';
+    
+    // 🌟 追加：分析画面を開いた時はFABを隠す
+    document.getElementById('mainFabContainer').style.display = 'none';
+    
+    loadWaitRankingForAnalysis();
+    drawAnalysisChart();
+});
 
-    document.getElementById('waitRankingList').innerHTML = '🔄 読み込み中...';
-    document.getElementById('waitStoreGroupList').innerHTML = '';
+document.getElementById('btnBackFromAnalysis').addEventListener('click', () => {
+    document.getElementById('analysisPage').style.display = 'none';
+    
+    // 🌟 修正：マップではなく、売上(カレンダー)画面に戻す
+    document.getElementById('salesPage').style.display = 'block';
+    
+    // 🌟 追加：売上画面に戻るのでFABを再表示
+    document.getElementById('mainFabContainer').style.display = 'flex';
+});
 
+function drawAnalysisChart() {
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    
+    // 直近10日間のデータを抽出
+    const labels = [];
+    const uberData = [];
+    const demaeData = [];
+    const woltData = [];
+    
+    const today = new Date();
+    for (let i = 9; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+        const dateKey = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+        labels.push(`${d.getMonth()+1}/${d.getDate()}`);
+        
+        if (allSalesData[dateKey]) {
+            uberData.push(allSalesData[dateKey].uber?.sales || 0);
+            demaeData.push(allSalesData[dateKey].demae?.sales || 0);
+            woltData.push(allSalesData[dateKey].wolt?.sales || 0);
+        } else {
+            uberData.push(0); demaeData.push(0); woltData.push(0);
+        }
+    }
+
+    if (salesChartInstance) { salesChartInstance.destroy(); }
+
+    // 🌟 Chart.jsの描画 (タップで線が浮き上がる・他が薄くなる設定)
+    salesChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Uber', data: uberData, borderColor: '#333333', backgroundColor: '#333333', tension: 0.3, pointRadius: 4, borderWidth: 3 },
+                { label: '出前館', data: demaeData, borderColor: '#D93025', backgroundColor: '#D93025', tension: 0.3, pointRadius: 4, borderWidth: 3 },
+                { label: 'Wolt', data: woltData, borderColor: '#00A5D9', backgroundColor: '#00A5D9', tension: 0.3, pointRadius: 4, borderWidth: 3 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    onClick: function(e, legendItem, legend) {
+                        const index = legendItem.datasetIndex;
+                        const ci = legend.chart;
+                        
+                        // すべてのデータセットを確認し、タップされたもの以外を半透明にする
+                        ci.data.datasets.forEach((d, i) => {
+                            if (i === index) {
+                                // 選択されたものは濃く太く
+                                d.borderWidth = 4;
+                                d.borderColor = d.backgroundColor.replace(/[^,]+(?=\))/, '1.0'); 
+                            } else {
+                                // 他は薄く細く
+                                d.borderWidth = 1;
+                                // 色を薄くする（簡易的なrgba変換ハック）
+                                if(d.backgroundColor === '#333333') d.borderColor = 'rgba(51,51,51,0.2)';
+                                else if(d.backgroundColor === '#D93025') d.borderColor = 'rgba(217,48,37,0.2)';
+                                else if(d.backgroundColor === '#00A5D9') d.borderColor = 'rgba(0,165,217,0.2)';
+                            }
+                        });
+                        ci.update();
+                    }
+                }
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { callback: function(val) { return '¥' + val.toLocaleString(); } } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+// 分析画面用の待機店舗ランキング抽出
+async function loadWaitRankingForAnalysis() {
     try {
         const qWait = query(collection(db, "wait_time_logs"), where("senderId", "==", currentUserId));
         const waitSnap = await getDocs(qWait);
-        allMyWaitLogs = [];
-        waitSnap.forEach(doc => allMyWaitLogs.push(doc.data()));
-
-        if (allMyWaitLogs.length === 0) {
-            document.getElementById('waitRankingList').innerHTML = '<div style="color:#5F6368;">まだ待機データがありません。現場で計測してみましょう！</div>';
-            return;
-        }
-
-        // 店舗ごとの集計
         const storeStats = {};
-        allMyWaitLogs.forEach(log => {
+        waitSnap.forEach(doc => {
+            const log = doc.data();
             if (!storeStats[log.storeName]) storeStats[log.storeName] = { count: 0, totalSec: 0, cancels: 0, name: log.storeName };
             storeStats[log.storeName].count++;
             storeStats[log.storeName].totalSec += log.waitSeconds;
@@ -1003,87 +1326,19 @@ document.getElementById('btnOpenWaitAnalysis').addEventListener('click', async (
         });
 
         const storeArr = Object.values(storeStats);
-        storeArr.forEach(s => s.avgSec = s.totalSec / s.count);
+        if(storeArr.length === 0) { document.getElementById('waitRankingList').innerHTML = '<div style="color:#5F6368;">待機データがありません。</div>'; return; }
         
-        // 1. ワーストランキング作成 (平均時間が長い順・上位3件)
+        storeArr.forEach(s => s.avgSec = s.totalSec / s.count);
         storeArr.sort((a, b) => b.avgSec - a.avgSec);
+        
         let rankHtml = '';
         storeArr.slice(0, 3).forEach((s, idx) => {
-            const avgMin = Math.floor(s.avgSec / 60);
-            const avgSec = Math.floor(s.avgSec % 60);
+            const avgMin = Math.floor(s.avgSec / 60); const avgSec = Math.floor(s.avgSec % 60);
             rankHtml += `<div style="margin-bottom:10px; padding:12px; background:#FCE8E6; border-radius:8px; border:1px solid #FAD2CF;">
                 <div style="font-weight:bold; color:#D93025; font-size:1.1em;">${idx + 1}位: ${s.name}</div>
                 <div style="font-size:0.9em; color:#5F6368; margin-top:4px;">平均 ${avgMin}分${avgSec}秒 (計${s.count}回 / キャンセル${s.cancels}回)</div>
             </div>`;
         });
-        document.getElementById('waitRankingList').innerHTML = rankHtml || '<div style="color:#5F6368;">データ不足です。</div>';
-
-        // 2. 店舗リスト作成 (件数が多い順)
-        storeArr.sort((a,b) => b.count - a.count);
-        let listHtml = '';
-        storeArr.forEach(s => {
-            listHtml += `<div class="store-history-btn" data-name="${s.name}" style="padding:12px 0; border-bottom:1px solid #eee; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-weight:bold; color:#1A73E8;">🏢 ${s.name}</span>
-                <span style="font-size:0.8em; color:#70757A;">${s.count}件の記録 ＞</span>
-            </div>`;
-        });
-        document.getElementById('waitStoreGroupList').innerHTML = listHtml;
-
-        // 詳細画面へのクリックイベント
-        document.querySelectorAll('.store-history-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const storeName = e.currentTarget.getAttribute('data-name');
-                openStoreDetail(storeName);
-            });
-        });
-
-    } catch (e) {
-        document.getElementById('waitRankingList').innerHTML = '<div style="color:#EA4335;">データの取得に失敗しました。</div>';
-    }
-});
-
-// 分析画面からプロフィールへ戻る
-document.getElementById('btnBackFromAnalysis').addEventListener('click', () => {
-    document.getElementById('waitAnalysisPage').style.display = 'none';
-    document.getElementById('profilePage').style.display = 'block';
-});
-
-// 詳細履歴からサマリーへ戻る
-document.getElementById('btnBackToAnalysisSummary').addEventListener('click', () => {
-    document.getElementById('analysisDetailView').style.display = 'none';
-    document.getElementById('analysisSummaryView').style.display = 'block';
-});
-
-// 店舗ごとの詳細履歴リストを描画する
-function openStoreDetail(storeName) {
-    document.getElementById('analysisSummaryView').style.display = 'none';
-    document.getElementById('analysisDetailView').style.display = 'block';
-    document.getElementById('detailStoreName').textContent = `🏢 ${storeName} の履歴`;
-
-    const logs = allMyWaitLogs.filter(l => l.storeName === storeName).sort((a, b) => b.createdAt - a.createdAt);
-    let html = '';
-    
-    logs.forEach(log => {
-        const d = new Date(log.createdAt);
-        const days = ['日','月','火','水','木','金','土'];
-        const dateStr = `${d.getMonth()+1}/${d.getDate()}(${days[d.getDay()]}) ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-        
-        const m = Math.floor(log.waitSeconds / 60);
-        const s = log.waitSeconds % 60;
-        
-        const isCancel = log.status === 'cancelled';
-        const statusBadge = isCancel 
-            ? `<span style="background:#FCE8E6; color:#D93025; padding:2px 6px; border-radius:4px; font-size:0.8em; font-weight:bold; margin-left:8px;">キャンセル</span>` 
-            : `<span style="background:#E6F4EA; color:#137333; padding:2px 6px; border-radius:4px; font-size:0.8em; font-weight:bold; margin-left:8px;">完了</span>`;
-        
-        html += `<div style="padding:12px 0; border-bottom:1px solid #F1F3F4; display:flex; justify-content:space-between; align-items:center;">
-            <div style="font-size:0.95em; color:#3C4043; font-weight:bold;">${dateStr}</div>
-            <div style="text-align:right;">
-                <span style="font-size:1.1em; font-weight:bold; color:#202124;">${m}分${s}秒</span>
-                ${statusBadge}
-            </div>
-        </div>`;
-    });
-    
-    document.getElementById('detailHistoryList').innerHTML = html;
+        document.getElementById('waitRankingList').innerHTML = rankHtml;
+    } catch(e) { document.getElementById('waitRankingList').innerHTML = 'エラーが発生しました'; }
 }
