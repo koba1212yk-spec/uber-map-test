@@ -8,18 +8,30 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100dvh; font-family: "G
 /* 🗺️ マップエリア */
 #map { width: 100%; height: 100dvh; position: absolute; top: 0; left: 0; z-index: 1; background: #E5E3DF; }
 
-/* 🔍 住所検索バー */
-.google-search-bar { position: absolute; top: calc(env(safe-area-inset-top, 15px) + 10px); left: 15px; right: 15px; z-index: 10; display: flex; align-items: center; background: #FFFFFF; height: 50px; border-radius: 25px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); overflow: hidden; padding: 0 16px; }
+/* 🔍 住所検索バー (黄金比グラスモーフィズム) */
+.google-search-bar { 
+    position: absolute; top: calc(env(safe-area-inset-top, 15px) + 10px); left: 15px; right: 15px; z-index: 10; display: flex; align-items: center; 
+    background: rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(20px) saturate(120%); -webkit-backdrop-filter: blur(20px) saturate(120%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    height: 50px; border-radius: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.1) !important; overflow: hidden; padding: 0 16px; 
+}
 .search-icon { display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; }
 .google-search-bar input { flex: 1; border: none !important; background: transparent !important; box-shadow: none !important; font-size: 16px; color: #202124; outline: none; margin: 0; -webkit-appearance: none; border-radius: 0; height: 32px; line-height: 32px; padding-top: 7px; padding-bottom: 0; padding-left: 0; padding-right: 0; }
-#addressSearchInput { flex: 1 !important; border: none !important; background: transparent !important; outline: none !important; font-size: 16px !important; color: #202124 !important; margin: 0 !important; padding: 0 !important; height: 50px !important; line-height: 50px !important; }
-.google-search-bar input::placeholder { color: #70757A; }
+#addressSearchInput { flex: 1 !important; border: none !important; background: transparent !important; outline: none !important; font-size: 16px !important; color: #202124 !important; margin: 0 !important; padding: 0 !important; height: 50px !important; line-height: 50px !important; text-shadow: 0 1px 2px rgba(255,255,255,0.8); }
+.google-search-bar input::placeholder { color: #70757A; font-weight: 500; }
 
-/* 🌟 検索サジェスト (Nominatim用) */
-.search-suggestions { position: absolute; top: calc(env(safe-area-inset-top, 15px) + 65px); left: 15px; right: 15px; background: #FFFFFF; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); z-index: 2000; max-height: 250px; overflow-y: auto; display: none; }
-.suggestion-item { padding: 12px 16px; border-bottom: 1px solid #F1F3F4; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 0.9em; color: #202124; }
+/* 🌟 検索サジェスト (黄金比グラスモーフィズム) */
+.search-suggestions { 
+    position: absolute; top: calc(env(safe-area-inset-top, 15px) + 65px); left: 15px; right: 15px; 
+    background: rgba(255, 255, 255, 0.65) !important;
+    backdrop-filter: blur(24px) saturate(120%); -webkit-backdrop-filter: blur(24px) saturate(120%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); z-index: 2000; max-height: 250px; overflow-y: auto; display: none; 
+}
+.suggestion-item { padding: 12px 16px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 0.9em; color: #202124; }
 .suggestion-item:last-child { border-bottom: none; }
-.suggestion-item:hover { background: #F8F9FA; }
+.suggestion-item:hover { background: rgba(255,255,255,0.3); }
 .suggestion-icon { color: #EA4335; font-size: 1.2em; }
 
 /* 📱 ボトムナビゲーション */
@@ -30,69 +42,96 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100dvh; font-family: "G
 .nav-tab.active .nav-icon-container { background: #C2E7FF; color: #001D35; }
 .nav-tab.active span { color: #001D35; font-weight: 600; }
 
-/* 🎯 マップ右下 UIボタン */
+/* 🎯 マップ右下 UIボタン (黄金比グラスモーフィズム) */
 .map-controls-container { position: absolute; right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 12px; }
-.control-circle-btn { width: 48px; height: 48px; background: #FFFFFF; border: none; border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer; display: flex; justify-content: center; align-items: center; }
+.control-circle-btn { 
+    width: 48px; height: 48px; 
+    background: rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(16px) saturate(120%); -webkit-backdrop-filter: blur(16px) saturate(120%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); cursor: pointer; display: flex; justify-content: center; align-items: center; 
+}
 
 /* 🔵 現在地青パルス */
-.current-location-dot { 
-    width: 18px; 
-    height: 18px; 
-    background-color: #4285F4; 
-    border: 3px solid #FFFFFF; 
-    border-radius: 50%; 
-    box-shadow: 0 1px 4px rgba(0,0,0,0.3); 
-    position: relative; 
-    z-index: 9999 !important;
-}
+.current-location-dot { width: 18px; height: 18px; background-color: #4285F4; border: 3px solid #FFFFFF; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.4); position: relative; z-index: 9999 !important; }
 .current-location-dot::after { content: ''; position: absolute; top: -14px; left: -14px; width: 40px; height: 40px; background-color: rgba(66, 133, 244, 0.4); border-radius: 50%; animation: pulse-blue 2s infinite ease-out; }
 @keyframes pulse-blue { 0% { transform: scale(0.2); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
 
 /* 🌟 MapLibreが動かすための外箱 */
 .marker-wrapper { display: flex; justify-content: center; align-items: center; }
-
-/* 📍 仮ピン */
 .sharp-temp-pin { width: 28px; height: 40px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36"><path fill="%23EA4335" d="M12 0C5.37 0 0 5.37 0 12c0 9 12 24 12 24s12-15 12-24c0-6.63-5.37-12-12-12zm0 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center bottom; filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.3)); }
 
-.custom-memo-marker { width: 32px; height: 32px; border-radius: 50%; border: 3px solid #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 2; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease; }
-.custom-memo-marker.selected { z-index: 3; transform: scale(1.25); box-shadow: 0 0 0 5px var(--cat-color-alpha), 0 0 16px var(--cat-color); }
+/* 🌟 フロストガラス風カスタムメモマーカー (ビー玉風) */
+.custom-memo-marker { 
+    width: 32px; height: 32px; border-radius: 50%; 
+    border: 2px solid rgba(255, 255, 255, 0.8) !important; 
+    display: flex; align-items: center; justify-content: center; cursor: pointer; 
+    box-shadow: inset 0 4px 6px rgba(255,255,255,0.5), inset 0 -4px 6px rgba(0,0,0,0.15), 0 8px 12px rgba(0,0,0,0.25) !important;
+    z-index: 2; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease; 
+    position: relative; overflow: hidden;
+}
+.custom-memo-marker::after {
+    content: ''; position: absolute; top: 1px; left: 15%; width: 70%; height: 40%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,0));
+    border-radius: 50%; pointer-events: none;
+}
+.custom-memo-marker svg { position: relative; z-index: 2; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3)); }
+.custom-memo-marker.selected { z-index: 3; transform: scale(1.25); box-shadow: 0 0 0 5px var(--cat-color-alpha), 0 8px 16px rgba(0,0,0,0.4) !important; }
 
 .pop-animation { animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.25); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 
-/* 📻 エリア注目情報 */
-.area-info-ticker { position: absolute; bottom: calc(80px + env(safe-area-inset-bottom)); left: 0; right: 0; height: 56px; background: #FFFFFF; border-radius: 40px 40px 0 0 !important; box-shadow: 0 -4px 16px rgba(0,0,0,0.1) !important; border-top: none !important; display: flex; align-items: center; z-index: 10; padding-top: 8px; }
+/* 📻 エリア注目情報 (黄金比グラスモーフィズム) */
+.area-info-ticker { 
+    position: absolute; bottom: calc(80px + env(safe-area-inset-bottom)); left: 0; right: 0; height: 56px; 
+    background: rgba(255, 255, 255, 0.65) !important;
+    backdrop-filter: blur(20px) saturate(120%); -webkit-backdrop-filter: blur(20px) saturate(120%);
+    border-top: 1px solid rgba(255, 255, 255, 0.7) !important;
+    border-radius: 40px 40px 0 0 !important; box-shadow: 0 -8px 32px rgba(0,0,0,0.1) !important; display: flex; align-items: center; z-index: 10; padding-top: 8px; 
+}
 .ticker-left { flex: 1; padding: 0 0 0 24px !important; height: 100%; perspective: 1000px; display: flex; align-items: center; cursor: pointer; overflow: hidden; }
-.ticker-right { border-left: none; margin: 8px 16px 8px 8px; padding: 0 16px !important; border-radius: 12px; background: #FFFFFF; box-shadow: 3px 3px 6px #E8EAED, -3px -3px 6px #FFFFFF; font-size: 0.85em; font-weight: bold; color: #5F6368; display: flex; align-items: center; height: 70%; flex-shrink: 0; transition: all 0.2s ease; cursor: pointer; }
-.ticker-right:active { box-shadow: inset 2px 2px 4px #E8EAED, inset -2px -2px 4px #FFFFFF; }
+.ticker-right { 
+    border-left: none; margin: 8px 16px 8px 8px; padding: 0 16px !important; border-radius: 12px; 
+    background: rgba(255, 255, 255, 0.4) !important; 
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.05), -2px -2px 5px rgba(255,255,255,0.5) !important; 
+    font-size: 0.85em; font-weight: bold; color: #3C4043; display: flex; align-items: center; height: 70%; flex-shrink: 0; transition: all 0.2s ease; cursor: pointer; 
+}
+.ticker-right:active { box-shadow: inset 2px 2px 4px rgba(0,0,0,0.05), inset -2px -2px 4px rgba(255,255,255,0.5) !important; }
 
 .ticker-content { position: relative; width: 100%; height: 20px; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-.ticker-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.0em; font-weight: bold; display: flex; align-items: center; color: #3C4043; }
+.ticker-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.0em; font-weight: bold; display: flex; align-items: center; color: #202124; text-shadow: 0 1px 3px rgba(255,255,255,0.9); }
 .ticker-front { transform: rotateX(0deg); }
 .ticker-back { transform: rotateX(180deg); color: #1A73E8; }
 .ticker-content.flipped { transform: rotateX(180deg); }
 
-/* ボトムシート共通 */
-.bottom-sheet { position: absolute; bottom: 0; left: 0; width: 100%; background: #FFFFFF; z-index: 15; padding: 20px 20px calc(95px + env(safe-area-inset-bottom)) 20px; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 16px rgba(0,0,0,0.15); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+/* ボトムシート共通 (黄金比グラスモーフィズム) */
+.bottom-sheet { 
+    position: absolute; bottom: 0; left: 0; width: 100%; 
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(24px) saturate(120%); -webkit-backdrop-filter: blur(24px) saturate(120%);
+    border-top: 1px solid rgba(255, 255, 255, 0.8);
+    z-index: 15; padding: 20px 20px calc(95px + env(safe-area-inset-bottom)) 20px; border-radius: 20px 20px 0 0; box-shadow: 0 -8px 32px rgba(0,0,0,0.15) !important; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); 
+}
 .bottom-sheet.show { transform: translateY(0); }
-.drag-handle { width: 36px; height: 4px; background: #DADCE0; border-radius: 2px; margin: -10px auto 15px auto; }
+.drag-handle { width: 36px; height: 4px; background: rgba(0,0,0,0.2); border-radius: 2px; margin: -10px auto 15px auto; }
 
 /* ボタン・フォームUI */
-.btn-main-blue { padding: 12px; background: #1A73E8; color: #FFF; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1em; display: flex; justify-content: center; align-items: center; }
-.btn-outline-blue { padding: 12px; background: transparent; color: #1A73E8; border: 1px solid #1A73E8; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
+.btn-main-blue { padding: 12px; background: #1A73E8; color: #FFF; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1em; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(26,115,232,0.3); }
+.btn-outline-blue { padding: 12px; background: rgba(255,255,255,0.6); color: #1A73E8; border: 1px solid #1A73E8; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
 .btn-text-gray { padding: 12px; background: transparent; color: #5F6368; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; }
-button:disabled { background: #E8EAED !important; color: #9AA0A6 !important; border-color: #DADCE0 !important; cursor: not-allowed !important; box-shadow: none !important; }
+button:disabled { background: rgba(232,234,237,0.5) !important; color: #9AA0A6 !important; border-color: rgba(218,220,224,0.5) !important; cursor: not-allowed !important; box-shadow: none !important; }
 
-textarea, input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 1px solid #DADCE0; background: #F8F9FA; color: #202124; border-radius: 8px; font-size: 1em; font-family: inherit; resize: none; margin-bottom: 12px; }
+textarea, input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.7); color: #202124; border-radius: 8px; font-size: 1em; font-family: inherit; resize: none; margin-bottom: 12px; }
 textarea:focus, input[type="text"]:focus, input[type="number"]:focus { outline: none; border-color: #1A73E8; background: #FFFFFF; }
-input:disabled { background: #E8EAED; color: #80868B; border-color: #DADCE0; cursor: not-allowed; }
+input:disabled { background: rgba(232,234,237,0.5); color: #80868B; border-color: #DADCE0; cursor: not-allowed; }
 
 .category-selector { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .cat-chip input { display: none; }
-.cat-chip span { display: inline-block; padding: 6px 12px; background: #FFFFFF; border: 1px solid #DADCE0; color: #3C4043; border-radius: 20px; font-size: 0.85em; font-weight: 500; cursor: pointer; transition: 0.2s; }
+.cat-chip span { display: inline-block; padding: 6px 12px; background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.1); color: #3C4043; border-radius: 20px; font-size: 0.85em; font-weight: 500; cursor: pointer; transition: 0.2s; }
 .cat-chip input:checked + span { background: #E8F0FE; color: #1A73E8; border-color: #1A73E8; }
 .image-upload-row { display: flex; gap: 10px; }
-.image-upload-btn { flex: 1; padding: 10px; background: #FFFFFF; border: 1px dashed #BDC1C6; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; color: #5F6368; font-size: 0.9em; }
+.image-upload-btn { flex: 1; padding: 10px; background: rgba(255,255,255,0.6); border: 1px dashed rgba(0,0,0,0.2); border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; color: #5F6368; font-size: 0.9em; }
 .toggle-name-label { display: flex; align-items: center; gap: 10px; font-size: 0.85em; color: #5F6368; margin-top: 10px; cursor: pointer; }
 .toggle-name-label input { accent-color: #1A73E8; width: 18px; height: 18px; }
 
@@ -106,36 +145,36 @@ input:disabled { background: #E8EAED; color: #80868B; border-color: #DADCE0; cur
 .sheet-header h2 { margin: 0; font-size: 1.3em; color: #202124; }
 .sheet-meta { font-size: 0.85em; color: #70757A; }
 .sheet-text { font-size: 1em; line-height: 1.5; color: #3C4043; margin: 0 0 15px 0; white-space: pre-wrap; }
-.btn-close-sheet { position: absolute; top: 12px; right: 16px; width: 32px; height: 32px; border-radius: 50%; background: #F1F3F4; border: none; font-size: 16px; font-weight: bold; color: #5F6368; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
+.btn-close-sheet { position: absolute; top: 12px; right: 16px; width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.05); border: none; font-size: 16px; font-weight: bold; color: #5F6368; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
 
-.memo-group-nav { display: flex; justify-content: space-between; align-items: center; background: #F8F9FA; padding: 8px 16px; border-radius: 8px; margin: 0 16px 12px 16px; font-size: 0.9em; color: #1A73E8; font-weight: bold; }
+.memo-group-nav { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.6); padding: 8px 16px; border-radius: 8px; margin: 0 16px 12px 16px; font-size: 0.9em; color: #1A73E8; font-weight: bold; border: 1px solid rgba(255,255,255,0.5); }
 .btn-group-nav { background: #E8F0FE; border: none; width: 32px; height: 32px; border-radius: 50%; color: #1A73E8; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
 /* 画像カルーセル */
-#sheetImageContainer { width: 100%; height: 200px; background: #F1F3F4; border-radius: 8px; margin: 12px 0; display: none; align-items: center; justify-content: center; overflow: hidden; }
+#sheetImageContainer { width: 100%; height: 200px; background: rgba(0,0,0,0.05); border-radius: 8px; margin: 12px 0; display: none; align-items: center; justify-content: center; overflow: hidden; }
 .carousel-container { position: relative; width: 100%; margin-top: 12px; }
 .carousel-scroll { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; -ms-overflow-style: none; scrollbar-width: none; gap: 8px; }
 .carousel-scroll::-webkit-scrollbar { display: none; }
 .carousel-scroll img { width: 100%; flex-shrink: 0; scroll-snap-align: center; object-fit: cover; border-radius: 8px; max-height: 250px; cursor: pointer; }
 .carousel-counter { position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0, 0.65); color: white; font-size: 0.75em; font-weight: bold; padding: 4px 10px; border-radius: 12px; z-index: 2; pointer-events: none; }
 .carousel-dots { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
-.carousel-dots .dot { width: 6px; height: 6px; border-radius: 50%; background: #DADCE0; transition: background 0.3s; }
+.carousel-dots .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(0,0,0,0.2); transition: background 0.3s; }
 .carousel-dots .dot.active { background: #1A73E8; }
 
 /* アクションバー */
-.sheet-action-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid #F1F3F4; }
+.sheet-action-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.05); }
 .action-left, .action-right { display: flex; align-items: center; gap: 8px; }
 .action-left { cursor: pointer; }
-.sheet-author-icon { width: 32px; height: 32px; background: #E8EAED; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2em; }
-.btn-manage { background: transparent; border: 1px solid #DADCE0; padding: 6px 12px; border-radius: 20px; font-size: 0.8em; font-weight: bold; cursor: pointer; color: #5F6368; }
+.sheet-author-icon { width: 32px; height: 32px; background: rgba(0,0,0,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2em; }
+.btn-manage { background: transparent; border: 1px solid rgba(0,0,0,0.15); padding: 6px 12px; border-radius: 20px; font-size: 0.8em; font-weight: bold; cursor: pointer; color: #5F6368; }
 .btn-manage.delete { color: #EA4335; border-color: transparent; background: #FCE8E6; }
-.btn-reaction { background: #F1F3F4; border: none; padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #3C4043; }
+.btn-reaction { background: rgba(0,0,0,0.05); border: none; padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #3C4043; }
 .btn-reaction.like { color: #E91E63; background: #FCE4EC; }
 
-.action-bottom-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 12px; border-top: 1px dashed #E8EAED; }
+.action-bottom-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 12px; border-top: 1px dashed rgba(0,0,0,0.05); }
 .action-left-bottom { display: flex; }
 .action-right-bottom { display: flex; gap: 8px; }
-.btn-manage.nav { color: #1A73E8; border-color: #1A73E8; background: #E8F0FE; display: flex; align-items: center; gap: 4px; }
+.btn-manage.nav { color: #1A73E8; border-color: #1A73E8; background: rgba(232,240,254,0.8); display: flex; align-items: center; gap: 4px; border: 1px solid rgba(26,115,232,0.3); }
 .btn-manage.nav:active { background: #D2E3FC; }
 
 /* 🧭 コンパス */
@@ -143,14 +182,20 @@ input:disabled { background: #E8EAED; color: #80868B; border-color: #DADCE0; cur
 .heading-cone { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center; transform: translateX(-50%) rotate(0deg); width: 120px; height: 120px; background: radial-gradient(circle at bottom, rgba(26,115,232,0.45) 0%, rgba(26,115,232,0) 70%); clip-path: polygon(50% 100%, 0 0, 100% 0); display: none; pointer-events: none; }
 .heading-cone.show { display: block; }
 
-/* 🌤️ 天気ボトムシート */
-.weather-bottom-sheet { position: fixed; bottom: -100%; left: 0; width: 100%; background-color: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 15px rgba(0,0,0,0.15); z-index: 2000; transition: bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1); padding: 16px 16px 80px 16px; }
+/* 🌤️ 天気ボトムシート (黄金比グラスモーフィズム) */
+.weather-bottom-sheet { 
+    position: fixed; bottom: -100%; left: 0; width: 100%; 
+    background: rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(24px) saturate(120%); -webkit-backdrop-filter: blur(24px) saturate(120%);
+    border-top: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 20px 20px 0 0; box-shadow: 0 -8px 32px rgba(0,0,0,0.15); z-index: 2000; transition: bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1); padding: 16px 16px 80px 16px; 
+}
 .weather-bottom-sheet.show { bottom: 0; }
 .weather-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.weather-tile.main-tile { grid-column: span 2; display: flex; align-items: center; background-color: #F8F9FA; padding: 12px; border-radius: 12px; }
+.weather-tile.main-tile { grid-column: span 2; display: flex; align-items: center; background-color: rgba(255,255,255,0.6); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.7); }
 .wx-main-icon { font-size: 32px; margin-right: 16px; }
 .wx-main-info { display: flex; flex-direction: column; }
-.weather-tile { background-color: #F8F9FA; padding: 10px 12px; border-radius: 12px; display: flex; align-items: center; }
+.weather-tile { background-color: rgba(255,255,255,0.6); padding: 10px 12px; border-radius: 12px; display: flex; align-items: center; border: 1px solid rgba(255,255,255,0.7); }
 .tile-icon { font-size: 20px; margin-right: 10px; }
 .tile-body { display: flex; flex-direction: column; }
 .tile-label { font-size: 11px; color: #70757A; margin-bottom: 2px; }
@@ -158,7 +203,7 @@ input:disabled { background: #E8EAED; color: #80868B; border-color: #DADCE0; cur
 .wx-unit, .tile-unit { font-size: 12px; color: #70757A; margin-left: 2px; }
 .wx-label { font-size: 13px; color: #202124; font-weight: 500; }
 .weather-target-mark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 100; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-.btn-weather-confirm { position: absolute; bottom: calc(155px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 100; padding: 14px 28px; background: #1A73E8; color: white; font-weight: bold; border: none; border-radius: 30px; box-shadow: 0 4px 12px rgba(26,115,232,0.4); cursor: pointer; font-size: 1.1em; display: flex; align-items: center; gap: 8px; }
+.btn-weather-confirm { position: absolute; bottom: calc(155px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 100; padding: 14px 28px; background: rgba(26,115,232,0.9); backdrop-filter: blur(4px); color: white; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); border-radius: 30px; box-shadow: 0 4px 12px rgba(26,115,232,0.4); cursor: pointer; font-size: 1.1em; display: flex; align-items: center; gap: 8px; }
 .btn-weather-confirm:active { background: #1557B0; transform: translateX(-50%) scale(0.95); }
 
 /* 🌟 Google風 Snackbar */
@@ -202,7 +247,7 @@ input:disabled { background: #E8EAED; color: #80868B; border-color: #DADCE0; cur
 #memoActionPanel.peek-bottom { transform: translateY(calc(100% - 90px)) !important; overflow: hidden; }
 
 /* 🌟 周辺検索リスト */
-.nearby-btn { width: 100%; padding: 10px; background: #eefdf4; color: #06C167; border: 1px solid #06C167; border-radius: 8px; margin-bottom: 8px; font-weight: bold; cursor: pointer; }
+.nearby-btn { width: 100%; padding: 10px; background: rgba(238,253,244,0.8); color: #06C167; border: 1px solid #06C167; border-radius: 8px; margin-bottom: 8px; font-weight: bold; cursor: pointer; }
 #nearbyCandidateSheet { height: 70vh; background: white; border-radius: 20px 20px 0 0; padding: 20px; position: fixed; bottom: -100%; left: 0; width: 100%; transition: bottom 0.3s; z-index: 2000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
 #nearbyCandidateSheet.show { bottom: 0; }
 .candidate-list { height: calc(70vh - 140px); overflow-y: auto; overscroll-behavior: contain; padding-bottom: 30px; }
@@ -210,13 +255,17 @@ input:disabled { background: #E8EAED; color: #80868B; border-color: #DADCE0; cur
 .candidate-item:active { background: #f5f5f5; }
 .map-search-btn { font-weight: bold; color: #333; background: #f9f9f9; border-bottom: 2px solid #ddd; margin-bottom: 10px; }
 
-/* 🌟 待機計測カードのスタイル */
-.wait-timer-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(8px); padding: 12px 16px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.5); z-index: 20; cursor: pointer; transition: transform 0.2s; white-space: nowrap; align-items: center; width: max-content; }
+/* 🌟 待機計測カードのスタイル (黄金比グラスモーフィズム化) */
+.wait-timer-card { 
+    background: rgba(255, 255, 255, 0.65) !important; 
+    backdrop-filter: blur(20px) saturate(120%) !important; -webkit-backdrop-filter: blur(20px) saturate(120%) !important; 
+    padding: 12px 16px; border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1) !important; border: 1px solid rgba(255,255,255,0.7) !important; z-index: 20; cursor: pointer; transition: transform 0.2s; white-space: nowrap; align-items: center; width: max-content; 
+}
 .wait-timer-card:active { transform: scale(0.95); }
 .wait-card-content { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 0.95em; color: #3C4043; }
-.wait-divider { color: #DADCE0; }
+.wait-divider { color: rgba(0,0,0,0.2); }
 .wait-store-name { color: #1A73E8; max-width: 140px; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: bottom; }
-.btn-stop-timer { background: #FCE8E6 !important; border: 2px solid #EA4335 !important; }
+.btn-stop-timer { background: rgba(252,232,230,0.8) !important; border: 2px solid #EA4335 !important; }
 .store-history-btn:active { background: #F8F9FA; }
 
 /* 📅 🌟 カレンダーUI */
@@ -232,19 +281,31 @@ input:disabled { background: #E8EAED; color: #80868B; border-color: #DADCE0; cur
 .cal-amount { font-size: 0.85em; font-weight: bold; color: #137333; margin-top: auto; }
 .cal-count { font-size: 0.7em; color: #70757A; }
 
-/* 🌟 メインFAB (右下飛び出しボタン) */
+/* 🌟 メインFAB (右下飛び出しボタン - 黄金比グラスモーフィズム) */
 .fab-container { position: fixed; bottom: calc(95px + env(safe-area-inset-bottom)); right: 20px; z-index: 2000; display: flex; flex-direction: column-reverse; align-items: center; gap: 15px; }
-.fab-parent { width: 60px; height: 60px; border-radius: 30px; background: #06C167; color: white; border: none; box-shadow: 0 4px 12px rgba(6,193,103,0.4); font-size: 1.8em; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-.fab-parent.open { transform: rotate(45deg); background: #EA4335; box-shadow: 0 4px 12px rgba(234,67,53,0.4); }
-.fab-child { width: 48px; height: 48px; border-radius: 24px; background: #FFFFFF; color: #202124; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-size: 1.2em; display: flex; justify-content: center; align-items: center; cursor: pointer; opacity: 0; transform: translateY(20px) scale(0.5); pointer-events: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.fab-parent { width: 60px; height: 60px; border-radius: 30px; background: rgba(6,193,103,0.9); backdrop-filter: blur(12px) saturate(120%); border: 1px solid rgba(255,255,255,0.4); color: white; box-shadow: 0 4px 16px rgba(6,193,103,0.4); font-size: 1.8em; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.fab-parent.open { transform: rotate(45deg); background: rgba(234,67,53,0.9); box-shadow: 0 4px 16px rgba(234,67,53,0.4); }
+.fab-child { 
+    width: 48px; height: 48px; border-radius: 24px; 
+    background: rgba(255, 255, 255, 0.65) !important;
+    backdrop-filter: blur(20px) saturate(120%); border: 1px solid rgba(255,255,255,0.7);
+    color: #202124; box-shadow: 0 8px 24px rgba(0,0,0,0.15); font-size: 1.2em; display: flex; justify-content: center; align-items: center; cursor: pointer; opacity: 0; transform: translateY(20px) scale(0.5); pointer-events: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+}
 .fab-container.open .fab-child { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
-/* 順番に飛び出すディレイ */
 .fab-container.open .fab-record { transition-delay: 0.05s; }
 .fab-container.open .fab-analysis { transition-delay: 0.1s; }
 
-/* 🟢 稼働タイマーバー */
-.work-timer-bar { position: fixed; top: env(safe-area-inset-top, 0); left: 0; width: 100%; background: rgba(255,255,255,0.95); backdrop-filter: blur(8px); border-bottom: 1px solid #E8EAED; padding: 12px 20px; z-index: 5000; display: flex; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.3s; transform: translateY(-100%); }
+/* 🟢 稼働タイマーバー (黄金比グラスモーフィズム) */
+.work-timer-bar { 
+    position: fixed; top: env(safe-area-inset-top, 0); left: 0; width: 100%; 
+    background: rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(24px) saturate(120%); -webkit-backdrop-filter: blur(24px) saturate(120%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+    padding: 12px 20px; z-index: 5000; display: flex; align-items: center; box-shadow: 0 8px 32px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.3s; transform: translateY(-100%); 
+}
 .work-timer-bar.show { transform: translateY(0); }
 .pulse-dot { width: 12px; height: 12px; background: #06C167; border-radius: 50%; box-shadow: 0 0 0 0 rgba(6,193,103,0.7); animation: pulse-green 1.5s infinite; }
 .pulse-dot.paused { background: #FBBC04; animation: none; box-shadow: none; }
 @keyframes pulse-green { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6,193,103,0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(6,193,103,0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6,193,103,0); } }
+
+
